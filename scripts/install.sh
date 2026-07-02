@@ -8,7 +8,7 @@ set -Eeuo pipefail
 shopt -s nullglob
 
 # Terminal Title
-printf "\033]0;HyprMono Installer\a"
+printf "\033]0;Hyprmono Installer\a"
 
 # --- Absolute Path Resolution ---
 REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
@@ -16,15 +16,15 @@ SCRIPTS_DIR=$(dirname "$REAL_PATH")
 SELF_NAME=$(basename "$REAL_PATH")
 
 # --- Configuration ---
-readonly PROJECT="HyprMono"
+readonly PROJECT="Hyprmono"
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
-TARGET_REPO_DIR="$HOME/.local/share/Hyprmono"
-REPO_URL="github.com/YOURNAME/HyprMono"   # <- update to your actual repo
+TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
+REPO_URL="https://github.com/s0uth09/Hyprmono.git"   
 
 # Log location is intentionally independent of the repo path — we need
 # somewhere to write to even if repo resolution itself fails.
-LOGDIR="$HOME/.cache/hyprmono"
+LOGDIR="$HOME/.cache/Hyprmono"
 mkdir -p "$LOGDIR"
 LOGFILE="$LOGDIR/install.log"
 
@@ -125,10 +125,11 @@ keep_sudo_alive() {
 # assets/, scripts/) lives, without assuming the installer's own location
 # is inside it. Tries, in order:
 #   1. --repo flag / HYPRMONO_REPO env var (explicit override)
-#   2. The directory this script is sitting in (normal "ran from a clone" case)
-#   3. The standard install location: ~/.local/share/Hyprmono
-#   4. A short list of common clone locations
-#   5. A bounded search of $HOME for a Hyprmono/ dir with a config/ subfolder
+#   2. The directory this script is sitting in (flat layout: <repo>/install.sh)
+#   3. The parent of that directory (nested layout: <repo>/scripts/install.sh)
+#   4. The standard install location: ~/.local/share/hyprmono
+#   5. A short list of common clone locations
+#   6. A bounded search of $HOME for a hyprmono/ dir with a config/ subfolder
 is_valid_repo() { [[ -d "$1/config" ]]; }
 
 resolve_repo_root() {
@@ -140,10 +141,19 @@ resolve_repo_root() {
         err "HYPRMONO_REPO=$HYPRMONO_REPO has no config/ directory — ignoring override" >&2
     fi
 
-    local script_relative_root
-    script_relative_root=$(cd "$SCRIPTS_DIR/.." && pwd)
-    if is_valid_repo "$script_relative_root"; then
-        printf '%s\n' "$script_relative_root"
+    # The script may live either directly at the repo root
+    # (<repo>/install.sh) or nested one level down (<repo>/scripts/install.sh).
+    # Check self first so a flat layout doesn't get walked up one directory
+    # too far into the repo's parent.
+    if is_valid_repo "$SCRIPTS_DIR"; then
+        printf '%s\n' "$SCRIPTS_DIR"
+        return 0
+    fi
+
+    local script_parent
+    script_parent=$(cd "$SCRIPTS_DIR/.." && pwd)
+    if is_valid_repo "$script_parent"; then
+        printf '%s\n' "$script_parent"
         return 0
     fi
 
