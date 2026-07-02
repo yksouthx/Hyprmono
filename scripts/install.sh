@@ -7,8 +7,12 @@
 set -Eeuo pipefail
 shopt -s nullglob
 
+# Report exactly what failed (command + line number) instead of silently
+# exiting when set -e kills the script on a non-zero return.
+trap 'err "Failed (exit $?) at line $LINENO: $BASH_COMMAND"' ERR
+
 # Terminal Title
-printf "\033]0;HyprMono Installer\a"
+printf "\033]0;Hyprmono Installer\a"
 
 # --- Absolute Path Resolution ---
 REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
@@ -16,15 +20,15 @@ SCRIPTS_DIR=$(dirname "$REAL_PATH")
 SELF_NAME=$(basename "$REAL_PATH")
 
 # --- Configuration ---
-readonly PROJECT="HyprMono"
+readonly PROJECT="Hyprmono"
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
-TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
-REPO_URL="github.com/YOURNAME/HyprMono"   # <- update to your actual repo
+TARGET_REPO_DIR="$HOME/.local/share/Hyprmono"
+REPO_URL="github.com/s0uth09/Hyprmono"   # <- update to your actual repo
 
 # Log location is intentionally independent of the repo path — we need
 # somewhere to write to even if repo resolution itself fails.
-LOGDIR="$HOME/.cache/hyprmono"
+LOGDIR="$HOME/.cache/Hyprmono"
 mkdir -p "$LOGDIR"
 LOGFILE="$LOGDIR/install.log"
 
@@ -107,7 +111,9 @@ progress() {
     for ((i=0; i<filled; i++)); do printf "█"; done
     for ((i=filled; i<width; i++)); do printf "░"; done
     printf "] %d%%" "$(( 100 * current / total ))"
-    (( current == total )) && printf "\n"
+    if (( current == total )); then
+        printf "\n"
+    fi
 }
 
 # --- Sudo keep-alive ---
@@ -127,9 +133,9 @@ keep_sudo_alive() {
 #   1. --repo flag / HYPRMONO_REPO env var (explicit override)
 #   2. The directory this script is sitting in (flat layout: <repo>/install.sh)
 #   3. The parent of that directory (nested layout: <repo>/scripts/install.sh)
-#   4. The standard install location: ~/.local/share/hyprmono
+#   4. The standard install location: ~/.local/share/Hyprmono
 #   5. A short list of common clone locations
-#   6. A bounded search of $HOME for a hyprmono/ dir with a config/ subfolder
+#   6. A bounded search of $HOME for a Hyprmono/ dir with a config/ subfolder
 is_valid_repo() { [[ -d "$1/config" ]]; }
 
 resolve_repo_root() {
@@ -283,16 +289,37 @@ install_configs() {
         local folder_name=$(basename "$folder_path")
         count=$((count + 1))
 
-        if [[ -d "$CONFIG_DIR/$folder_name" ]]; then
-            \cp -rf "$CONFIG_DIR/$folder_name" "$backup_dir/"
+        printf "\n${DIM}  → %s${RESET}\n" "$folder_name"
+        log "Deploying $folder_name"
+
+        local dest="$CONFIG_DIR/$folder_name"
+
+        # If the destination is a symlink (e.g. left over from a previous
+        # symlink-based install, possibly pointing straight back into this
+        # repo), resolve it away before touching anything. Copying into a
+        # symlink that points back at the source makes cp refuse to copy a
+        # directory into itself, which — under `set -e` — silently kills
+        # the whole script with no obvious explanation.
+        if [[ -L "$dest" ]]; then
+            local link_target
+            link_target=$(readlink -f "$dest" 2>/dev/null || true)
+            warn "$folder_name is a symlink -> ${link_target:-broken link}, replacing with a real directory"
+            log "Removing symlink $dest (was -> $link_target)"
+            rm -f "$dest"
+        fi
+
+        if [[ -d "$dest" ]]; then
+            log "Backing up existing $dest ($(du -sh "$dest" 2>/dev/null | cut -f1))"
+            \cp -rf "$dest" "$backup_dir/"
             log "Backed up $folder_name"
         fi
 
-        mkdir -p "$CONFIG_DIR/$folder_name"
+        mkdir -p "$dest"
         local entries=("$folder_path"/*)
         if (( ${#entries[@]} > 0 )); then
-            \cp -rf "$folder_path/"* "$CONFIG_DIR/$folder_name/"
+            \cp -rf "$folder_path/"* "$dest/"
         fi
+        log "Deployed $folder_name"
 
         deployed+=("$folder_name")
         progress "$count" "$total"
