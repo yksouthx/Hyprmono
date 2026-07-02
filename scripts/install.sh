@@ -8,7 +8,7 @@ set -Eeuo pipefail
 shopt -s nullglob
 
 # Terminal Title
-printf "\033]0;Hyprmono Installer\a"
+printf "\033]0;HyprMono Installer\a"
 
 # --- Absolute Path Resolution ---
 REAL_PATH=$(readlink -f "${BASH_SOURCE[0]}")
@@ -16,15 +16,15 @@ SCRIPTS_DIR=$(dirname "$REAL_PATH")
 SELF_NAME=$(basename "$REAL_PATH")
 
 # --- Configuration ---
-readonly PROJECT="Hyprmono"
+readonly PROJECT="HyprMono"
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 TARGET_REPO_DIR="$HOME/.local/share/hyprmono"
-REPO_URL="https://github.com/s0uth09/Hyprmono.git"   
+REPO_URL="github.com/YOURNAME/HyprMono"   # <- update to your actual repo
 
 # Log location is intentionally independent of the repo path — we need
 # somewhere to write to even if repo resolution itself fails.
-LOGDIR="$HOME/.cache/Hyprmono"
+LOGDIR="$HOME/.cache/hyprmono"
 mkdir -p "$LOGDIR"
 LOGFILE="$LOGDIR/install.log"
 
@@ -284,14 +284,14 @@ install_configs() {
         count=$((count + 1))
 
         if [[ -d "$CONFIG_DIR/$folder_name" ]]; then
-            cp -r "$CONFIG_DIR/$folder_name" "$backup_dir/"
+            \cp -rf "$CONFIG_DIR/$folder_name" "$backup_dir/"
             log "Backed up $folder_name"
         fi
 
         mkdir -p "$CONFIG_DIR/$folder_name"
         local entries=("$folder_path"/*)
         if (( ${#entries[@]} > 0 )); then
-            cp -r "$folder_path/"* "$CONFIG_DIR/$folder_name/"
+            \cp -rf "$folder_path/"* "$CONFIG_DIR/$folder_name/"
         fi
 
         deployed+=("$folder_name")
@@ -323,7 +323,7 @@ install_configs() {
                 continue
             fi
 
-            cp "$script" "$LOCAL_BIN/"
+            \cp -f "$script" "$LOCAL_BIN/"
             chmod +x "$LOCAL_BIN/$script_name"
             ok "Installed $script_name to $LOCAL_BIN"
         fi
@@ -339,7 +339,7 @@ install_configs() {
     title "Asset Deployment"
     if [[ -d "$REPO_ROOT/assets" ]]; then
         mkdir -p "$CONFIG_DIR/hypr/assets"
-        cp -r "$REPO_ROOT/assets/"* "$CONFIG_DIR/hypr/assets/"
+        \cp -rf "$REPO_ROOT/assets/"* "$CONFIG_DIR/hypr/assets/"
         ok "Deployed assets to $CONFIG_DIR/hypr/assets"
 
         if [[ -d "$REPO_ROOT/assets/fonts" ]]; then
@@ -347,7 +347,7 @@ install_configs() {
             mkdir -p "$HOME/.local/share/fonts"
             local font_files=("$REPO_ROOT/assets/fonts"/*.otf "$REPO_ROOT/assets/fonts"/*.ttf)
             if (( ${#font_files[@]} > 0 )); then
-                cp "${font_files[@]}" "$HOME/.local/share/fonts/"
+                \cp -f "${font_files[@]}" "$HOME/.local/share/fonts/"
             fi
             fc-cache -f &>/dev/null
             ok "Fonts installed successfully."
@@ -433,7 +433,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
         warn "Repository is at $REPO_ROOT instead of $TARGET_REPO_DIR"
         if ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
             mkdir -p "$TARGET_REPO_DIR"
-            cp -r "$REPO_ROOT/"* "$TARGET_REPO_DIR/"
+            \cp -rf "$REPO_ROOT/"* "$TARGET_REPO_DIR/"
             ok "Migration complete."
             info "Continuing install from $TARGET_REPO_DIR..."
             exec "$TARGET_REPO_DIR/scripts/$SELF_NAME" "$@"
