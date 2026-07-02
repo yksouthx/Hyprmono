@@ -32,6 +32,11 @@ LOGDIR="$HOME/.cache/Hyprmono"
 mkdir -p "$LOGDIR"
 LOGFILE="$LOGDIR/install.log"
 
+# --- Flags (set via CLI args in main()) ---
+NO_MIGRATE=0
+SKIP_PKGS=0
+ASSUME_YES=0
+
 # --- Colors ---
 RESET="\e[0m"
 
@@ -72,6 +77,13 @@ has() { command -v "$1" >/dev/null 2>&1; }
 ask() {
     local prompt="$1"
     local default="${2:-y}"
+
+    if [[ "$ASSUME_YES" -eq 1 ]]; then
+        info "Auto-confirming (--yes): $prompt -> ${default}"
+        [[ "$default" == y ]]
+        return
+    fi
+
     echo
     printf "${GRAY}"
     printf '─%.0s' $(seq 1 46)
@@ -198,7 +210,7 @@ PACMAN_PACKAGES=(
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
-    swaync dunst wlogout swaylock
+    swaync dunst wlogout swaylock swww
     fish fastfetch
 )
 
@@ -399,7 +411,12 @@ print_footer() {
 }
 
 main() {
+   local ORIG_ARGS=("$@")
    # --repo /path/to/Hyprmono overrides auto-detection for this run
+   # --no-migrate skips relocating the repo to $TARGET_REPO_DIR
+   # --skip-pkgs skips the pacman dependency check/install step
+   # --yes (alias --non-interactive) auto-answers every prompt with its default,
+   #   so this script can be driven from reinstall.sh / hyde-shell.sh without a tty
    while [[ $# -gt 0 ]]; do
        case "$1" in
            --repo)
@@ -408,6 +425,18 @@ main() {
                ;;
            --repo=*)
                HYPRMONO_REPO="${1#--repo=}"
+               shift
+               ;;
+           --no-migrate)
+               NO_MIGRATE=1
+               shift
+               ;;
+           --skip-pkgs)
+               SKIP_PKGS=1
+               shift
+               ;;
+           --yes|--non-interactive)
+               ASSUME_YES=1
                shift
                ;;
            *)
@@ -456,18 +485,24 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     scan_system
 
     # Path enforcement
-    if [[ "$REPO_ROOT" != "$TARGET_REPO_DIR" ]]; then
+    if [[ "$NO_MIGRATE" -eq 1 ]]; then
+        info "Skipping repository migration (--no-migrate)."
+    elif [[ "$REPO_ROOT" != "$TARGET_REPO_DIR" ]]; then
         warn "Repository is at $REPO_ROOT instead of $TARGET_REPO_DIR"
         if ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
             mkdir -p "$TARGET_REPO_DIR"
             \cp -rf "$REPO_ROOT/"* "$TARGET_REPO_DIR/"
             ok "Migration complete."
             info "Continuing install from $TARGET_REPO_DIR..."
-            exec "$TARGET_REPO_DIR/scripts/$SELF_NAME" "$@"
+            exec "$TARGET_REPO_DIR/scripts/$SELF_NAME" "${ORIG_ARGS[@]}" --no-migrate
         fi
     fi
 
-    install_packages
+    if [[ "$SKIP_PKGS" -eq 1 ]]; then
+        info "Skipping package check (--skip-pkgs)."
+    else
+        install_packages
+    fi
 
     DEPLOYED_ITEMS=()
     BACKUP_DIR="(none created)"
