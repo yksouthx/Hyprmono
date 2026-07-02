@@ -362,8 +362,22 @@ install_configs() {
                 continue
             fi
 
+            local script_dest="$LOCAL_BIN/$script_name"
+
+            # If the destination is a leftover symlink (e.g. from an older
+            # symlink-based install, possibly pointing straight back at this
+            # same script in the repo), remove it first. cp refuses to copy
+            # a file onto a destination that resolves to the same file,
+            # which — under `set -e` — silently kills the whole script.
+            if [[ -L "$script_dest" ]]; then
+                local script_link_target
+                script_link_target=$(readlink -f "$script_dest" 2>/dev/null || true)
+                warn "$script_name is a symlink -> ${script_link_target:-broken link}, replacing with a real file"
+                rm -f "$script_dest"
+            fi
+
             \cp -f "$script" "$LOCAL_BIN/"
-            chmod +x "$LOCAL_BIN/$script_name"
+            chmod +x "$script_dest"
             ok "Installed $script_name to $LOCAL_BIN"
         fi
     done
