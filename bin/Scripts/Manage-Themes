@@ -162,7 +162,7 @@ else
     parallel --bar --link "Patch-Theme" "{1}" "{2}" "{3}" "{4}" ::: "${themeNameQ[@]}" ::: "${themeRepoQ[@]}" ::: "--skipcaching" ::: "false"
     print_prompt -g "\n[cache]" " generating cache files..."
     #TODO Clean the ScrDir
-    "${scrDir}/swwwallcache.sh" -t ""
+    "${scrDir}/awwwallcache.sh" -t ""
     if printenv HYPRLAND_INSTANCE_SIGNATURE &>/dev/null; then
         "${scrDir}/themeswitch.sh" &>/dev/null
     fi

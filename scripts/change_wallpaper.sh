@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-
 # change_wallpaper.sh
-# Cycles through wallpapers in ~/.config/swww/wallpapers using swww.
+# Cycles through wallpapers in ~/.config/awww/wallpapers using awww.
 
-WALLPAPER_DIR="$HOME/.config/swww/wallpapers"
+WALLPAPER_DIR="$HOME/.config/awww/wallpapers"
 
 if [[ ! -d "$WALLPAPER_DIR" ]]; then
     echo "Error: Wallpaper directory not found at $WALLPAPER_DIR"
@@ -18,5 +17,11 @@ if [[ -z "$RANDOM_WALL" ]]; then
     exit 1
 fi
 
-# Apply the wallpaper using swww
-swww img "$RANDOM_WALL" --transition-type center --transition-step 100 --transition-fps 60
+# Apply the wallpaper using awww
+# awww uses 'awww img' just like swww did
+"$HOME/.config/Vyle/scripts/swwwallswitch.sh" -i "$RANDOM_WALL"
+
+# Support for Wallbash - triggers a theme update based on the new wallpaper
+if command -v swwwallbash.sh &> /dev/null; then
+    
+fi

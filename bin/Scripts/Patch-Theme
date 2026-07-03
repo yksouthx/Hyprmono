@@ -299,10 +299,10 @@ print_prompt -g "\n[exec] " "restore_cfg.sh \"${Theme_Dir}/restore_cfg.lst\" \"$
 "${CloneDir}/Scripts/restore_cfg.sh" "${Theme_Dir}/restore_cfg.lst" "${Theme_Dir}/Configs" "${Fav_Theme}" &>/dev/null
 
 if [ "${3}" != "--skipcaching" ]; then
-    if [ -f "$HOME/.local/lib/hyde/swwwallcache.sh" ]; then
-        "$HOME/.local/lib/hyde/swwwallcache.sh" -t "${Fav_Theme}"
-    elif [ -f "$HOME/.local/share/bin/swwwallcache.sh" ]; then
-        "$HOME/.local/share/bin/swwwallcache.sh" -t "${Fav_Theme}"
+    if [ -f "$HOME/.local/lib/hyde/awwwallcache.sh" ]; then
+        "$HOME/.local/lib/hyde/awwwallcache.sh" -t "${Fav_Theme}"
+    elif [ -f "$HOME/.local/share/bin/awwwallcache.sh" ]; then
+        "$HOME/.local/share/bin/awwwallcache.sh" -t "${Fav_Theme}"
     fi
 fi
 

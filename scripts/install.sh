@@ -138,16 +138,6 @@ keep_sudo_alive() {
     trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
 }
 
-# --- Repository Resolution ---
-# Figures out where the actual HyprMono repo (the one containing config/,
-# assets/, scripts/) lives, without assuming the installer's own location
-# is inside it. Tries, in order:
-#   1. --repo flag / HYPRMONO_REPO env var (explicit override)
-#   2. The directory this script is sitting in (flat layout: <repo>/install.sh)
-#   3. The parent of that directory (nested layout: <repo>/scripts/install.sh)
-#   4. The standard install location: ~/.local/share/Hyprmono
-#   5. A short list of common clone locations
-#   6. A bounded search of $HOME for a Hyprmono/ dir with a config/ subfolder
 is_valid_repo() { [[ -d "$1/config" ]]; }
 
 resolve_repo_root() {
@@ -159,10 +149,6 @@ resolve_repo_root() {
         err "HYPRMONO_REPO=$HYPRMONO_REPO has no config/ directory — ignoring override" >&2
     fi
 
-    # The script may live either directly at the repo root
-    # (<repo>/install.sh) or nested one level down (<repo>/scripts/install.sh).
-    # Check self first so a flat layout doesn't get walked up one directory
-    # too far into the repo's parent.
     if is_valid_repo "$SCRIPTS_DIR"; then
         printf '%s\n' "$SCRIPTS_DIR"
         return 0
@@ -206,11 +192,11 @@ resolve_repo_root() {
 
 # --- Package Management ---
 PACMAN_PACKAGES=(
-    hyprland hyprlock hypridle waybar kitty wofi rofi fuzzel
+    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
-    swaync dunst wlogout swaylock swww
+    swaync dunst wlogout swaylock awww wallbash-git
     fish fastfetch
 )
 
@@ -306,12 +292,6 @@ install_configs() {
 
         local dest="$CONFIG_DIR/$folder_name"
 
-        # If the destination is a symlink (e.g. left over from a previous
-        # symlink-based install, possibly pointing straight back into this
-        # repo), resolve it away before touching anything. Copying into a
-        # symlink that points back at the source makes cp refuse to copy a
-        # directory into itself, which — under `set -e` — silently kills
-        # the whole script with no obvious explanation.
         if [[ -L "$dest" ]]; then
             local link_target
             link_target=$(readlink -f "$dest" 2>/dev/null || true)
@@ -364,11 +344,6 @@ install_configs() {
 
             local script_dest="$LOCAL_BIN/$script_name"
 
-            # If the destination is a leftover symlink (e.g. from an older
-            # symlink-based install, possibly pointing straight back at this
-            # same script in the repo), remove it first. cp refuses to copy
-            # a file onto a destination that resolves to the same file,
-            # which — under `set -e` — silently kills the whole script.
             if [[ -L "$script_dest" ]]; then
                 local script_link_target
                 script_link_target=$(readlink -f "$script_dest" 2>/dev/null || true)
@@ -427,11 +402,7 @@ print_footer() {
 main() {
    local ORIG_ARGS=("$@")
    # --repo /path/to/Hyprmono overrides auto-detection for this run
-   # --no-migrate skips relocating the repo to $TARGET_REPO_DIR
-   # --skip-pkgs skips the pacman dependency check/install step
-   # --yes (alias --non-interactive) auto-answers every prompt with its default,
-   #   so this script can be driven from reinstall.sh / hyde-shell.sh without a tty
-   while [[ $# -gt 0 ]]; do
+     while [[ $# -gt 0 ]]; do
        case "$1" in
            --repo)
                HYPRMONO_REPO="$2"

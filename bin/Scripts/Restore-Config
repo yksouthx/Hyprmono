@@ -129,5 +129,5 @@ fi
 
 if [ "$restore_only" != "true" ]; then
     # If it's not true, execute the following commands
-    ${scrDir}/swwwallcache.sh
+    ${scrDir}/awwwallcache.sh
 fi

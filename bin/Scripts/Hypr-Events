@@ -34,12 +34,12 @@ event_monitorremoved() {
 
 event_monitoradded() {
   : # MONITORNAME
-    hyprctl dispatch exec 'swwwallpaper.sh'
+    hyprctl dispatch exec 'awwwallpaper.sh'
 }
 
 event_monitoraddedv2() {
   : # MONITORNAME
-    # hyprctl dispatch exec 'swwwallpaper.sh'
+    # hyprctl dispatch exec 'awwwallpaper.sh'
 }
 
 event_createworkspace() {
