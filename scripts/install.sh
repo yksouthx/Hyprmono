@@ -210,7 +210,7 @@ PACMAN_PACKAGES=(
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
-    swaync dunst wlogout swaylock swww
+    swaync dunst wlogout swaylock awww wallbash-git
     fish fastfetch
 )
 

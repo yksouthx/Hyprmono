@@ -375,19 +375,19 @@ cache() { #? Manages Hyde's cache
 	reload) #? Reload wallpaper cache
 		shift
 		# [[ -z ${*} ]] && print_prompt -y "NOTE: Append the 'Theme-Name' to reload specific theme"
-		swwwallcache.sh "${@}"
+		awwwallcache.sh "${@}"
 		;;
 	rebuild) #? Force rebuild cache
 		read -n 1 -s -r -p "[ENTER:yes ANY:no] Force rebuild cache, proceed? " key
 		[[ -z "$key" ]] || exit 0
 		echo ""
-		swwwallcache.sh -f
+		awwwallcache.sh -f
 		;;
 		#          wall)
 		# :
 		#          ;;
 	#  theme) #? Generate cache for current theme
-	#     swwwallcache.sh -t
+	#     awwwallcache.sh -t
 	#  ;;
 	*)
 		Parameters "${FUNCNAME[0]}"
@@ -502,7 +502,7 @@ wallpaper() { #? Wallpaper commands
 		shift
 		# cd - || exit
 		if [[ -z "${*}" ]] ; then echo "Missing /Path/to/Wallpaper: ${*}" ; exit 1 ; fi
-		"${scrDir}"/swwwallpaper.sh -s "${1}"
+		"${scrDir}"/awwwallpaper.sh -s "${1}"
 		: <<USAGE
 [WALLPAPER_SET_USAGE]
 	<PATH>
@@ -510,13 +510,13 @@ wallpaper() { #? Wallpaper commands
 USAGE
 		;;
 	next) #? Next wallppaer
-		"${scrDir}"/swwwallpaper.sh -n
+		"${scrDir}"/awwwallpaper.sh -n
 		;;
 	prev) #? Previous wallpaper
-		"${scrDir}"/swwwallpaper.sh -p
+		"${scrDir}"/awwwallpaper.sh -p
 		;;
 	select) #? Wallpaper selector
-		"${scrDir}"/swwwallselect.sh
+		"${scrDir}"/awwwallselect.sh
 		;;
 	variety) #? [*] Use variety package to manage wallpapers\nﯦ Add 'exec-once=Hyde wallpaper variety' in ./userprfs.conf
 		shift
@@ -559,7 +559,7 @@ wallbash() { #? Toggle to use wallpaper accent themes
 			echo "Invalid numeric value: $num_val"
 			exit 0
 		fi
-		"${scrDir}/swwwallbash.sh" "$(readlink "${hydeThemeDir}/wall.set")"
+		"${scrDir}/awwwallbash.sh" "$(readlink "${hydeThemeDir}/wall.set")"
 		notify-send -a "t1" -i "~/.config/dunst/icons/hyprdots.png" "${notif}"
 		: <<USAGE
 [WALLBASH_MODE_USAGE]
@@ -1001,12 +1001,12 @@ USAGE
 reload() { #? Just reload
 	if [[ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]]; then
 		box_me "Reloading Dots"
-		if [ -f "$HOME/.local/lib/hyde/swwwallcache.sh"  ];then
-			"$HOME/.local/lib/hyde/swwwallcache.sh" -t ""
-		elif [ -f "$HOME/.local/share/bin/swwwallcache.sh"  ];then
-			"$HOME/.local/share/bin/swwwallcache.sh" -t ""
+		if [ -f "$HOME/.local/lib/hyde/awwwallcache.sh"  ];then
+			"$HOME/.local/lib/hyde/awwwallcache.sh" -t ""
+		elif [ -f "$HOME/.local/share/bin/awwwallcache.sh"  ];then
+			"$HOME/.local/share/bin/awwwallcache.sh" -t ""
 		fi
-		{ [ -n "$hydeTheme" ] && "${scrDir}/themeswitch.sh" -s "$hydeTheme"; } || "${scrDir}/swwwallcache.sh"
+		{ [ -n "$hydeTheme" ] && "${scrDir}/themeswitch.sh" -s "$hydeTheme"; } || "${scrDir}/awwwallcache.sh"
 	fi
 }
 

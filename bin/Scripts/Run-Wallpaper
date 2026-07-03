@@ -36,5 +36,5 @@ exit 0
 
 ### startVARIETY ###
 #! /bin/env bash
-swwwallpaper.sh -s "${1}"
+awwwallpaper.sh -s "${1}"
 ### endVARIETY ###
