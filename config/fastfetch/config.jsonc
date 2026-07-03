@@ -1,128 +1,93 @@
 {
-  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-  "logo":
-    {
-      "source": "config/fastfetch/logo.png",
-      "height": 18,
-      "logoType": "auto",   
-      "width": 12, 
-     "padding": {
-        "top": 1,
-      "right": 4,
-      "left": 3
-    }
-   },  
-  "display": {
-    "separator": " : "
-  },
-  "modules": [
-    {
-      "type": "command",
-      "key": "  ",
-      "keyColor": "white",
-      "text": "splash=$(hyprctl splash);echo $splash"
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    "logo": {
+        "source": "~/.config/fastfetch/logo.png", // Path to your logo file
+        "type": "auto",                    // 'auto' detects the best protocol for your terminal
+        "width": 12,                       // Adjust width (in characters)
+        "padding": {
+            "top": 1,
+            "right": 4,
+            "left": 3
+        }
     },
-    {
-      "type": "custom",
-      "format": "┌──────────────────────────────────────────┐"
+    "display": {
+        "separator": " "
     },
-    {
-      "type": "chassis",
-      "key": "  󰇺 Chassis",
-      "format": "{1} {2} {3}"
-    },
-    {
-      "type": "os",
-      "key": "  󰣇 OS",
-      "format": "{2}",
-      "keyColor": "white"
-    },
-    {
-      "type": "kernel",
-      "key": "   Kernel",
-      "format": "{2}",
-      "keyColor": "white"
-    },
-    {
-      "type": "packages",
-      "key": "  󰏗 Packages",
-      "keyColor": "white"
-    },
-    {
-      "type": "display",
-      "key": "  󰍹 Display",
-      "format": "{1}x{2} @ {3}Hz [{7}]",
-      "keyColor": "white"
-    },
-    {
-      "type": "terminal",
-      "key": "   Terminal",
-      "keyColor": "white"
-    },
-    {
-      "type": "wm",
-      "key": "  󱗃 WM",
-      "format": "{2}",
-      "keyColor": "white"
-    },
-    {
-      "type": "custom",
-      "format": "└──────────────────────────────────────────┘"
-    },
-    "break",
-    {
-      "type": "title",
-      "key": "  ",
-      "format": "{6} {7} {8}"
-    },
-    {
-      "type": "custom",
-      "format": "┌──────────────────────────────────────────┐"
-    },
-    {
-      "type": "cpu",
-      "format": "{1} @ {7}",
-      "key": "   CPU",
-      "keyColor": "white"
-    },
-    {
-      "type": "gpu",
-      "format": "{1} {2}",
-      "key": "  󰊴 GPU",
-      "keyColor": "white"
-    },
-    {
-      "type": "gpu",
-      "format": "{3}",
-      "key": "   GPU Driver",
-      "keyColor": "white"
-    },
-    {
-      "type": "memory",
-      "key": "   Memory ",
-      "keyColor": "white"
-    },
-    {
-      "type": "disk",
-      "key": "  󱦟 OS Age ",
-      "folders": "/",
-      "keyColor": "white",
-      "format": "{days} days"
-    },
-    {
-      "type": "uptime",
-      "key": "  󱫐 Uptime ",
-      "keyColor": "white"
-    },
-    {
-      "type": "custom",
-      "format": "└──────────────────────────────────────────┘"
-    },
-    {
-      "type": "colors",
-      "paddingLeft": 2,
-      "symbol": "circle"
-    },
-    "break"
-  ]
+    "modules": [
+        {
+            "key": "╭───────────╮",
+            "type": "custom"
+        },
+        {
+            "key": "│ {#34} user    {#keys}│",
+            "type": "title",
+            "format": "{user-name}"
+        },
+        {
+            "key": "│ {#34}󰇅 hname   {#keys}│",
+            "type": "title",
+            "format": "{host-name}"
+        },
+        {
+            "type": "command",
+            "key": "│ {#34}󱦟 os age  {#keys}│",
+            "keyColor": "magenta",
+            "text": "printf \"\\e[0m%s days\\e[0m\" \"$(( ($(date +%s) - $(stat -c %W /)) / 86400 ))\""
+        },
+        {
+            "key": "│ {#34}󰅐 uptime  {#keys}│",
+            "type": "uptime"
+        },
+        {
+            "key": "│ {#34}{icon} distro  {#keys}│",
+            "type": "os"
+        },
+        {
+            "key": "│ {#34} kernel  {#keys}│",
+            "type": "kernel"
+        },
+        {
+            "key": "│ {#34} wm      {#keys}│",
+            "type": "wm"
+        },
+        {
+            "key": "│ {#34}󰇄 desktop {#keys}│",
+            "type": "de"
+        },
+        {
+            "key": "│ {#34} term    {#keys}│",
+            "type": "terminal"
+        },
+        {
+            "key": "│ {#34} shell   {#keys}│",
+            "type": "shell"
+        },
+        {
+            "key": "│ {#34}󰍛 cpu     {#keys}│",
+            "type": "cpu",
+            "showPeCoreCount": true
+        },
+        {
+            "key": "│ {#34}󰉉 disk    {#keys}│",
+            "type": "disk",
+            "folders": "/"
+        },
+        {
+            "key": "│ {#34} memory  {#keys}│",
+            "type": "memory"
+        },
+        {
+            "key": "├───────────┤",
+            "type": "custom"
+        },
+        {
+            "key": "│ {#34} colors  {#keys}│",
+            "type": "colors",
+            "symbol": "circle"
+        },
+        {
+            "key": "╰───────────╯",
+            "type": "custom"
+        }
+    ]
 }
