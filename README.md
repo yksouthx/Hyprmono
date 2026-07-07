@@ -70,7 +70,7 @@ Clone the repository and run the automated installer:
 ```bash
 mkdir -p ~/.local/share
 cd ~/.local/share
-git clone https://github.com/s0uth09/Hyprmono.git
+git clone https://github.com/yksouthx/Hyprmono.git
 cd Hyprmono
 ./hyde install
 ```
@@ -79,7 +79,6 @@ The installer will:
 1. Check for required and optional dependencies.
 2. Deploy configurations to `~/.config/`.
 3. Back up existing files as `filename.bak.<timestamp>`.
-4. Configure **Awww** and **Wallbash** for immediate use.
 
 ---
 
@@ -98,19 +97,6 @@ Available commands:
 - `update`: Pull latest changes and sync configurations.
 - `audit`: Perform a system check for dependencies.
 
----
-
-## ◈ Wallpaper & Theming
-
-HyprMono uses **Awww** for wallpaper management and **Wallbash** for theme synchronization.
-
-| Action | Keybind |
-| :--- | :--- |
-| **Next Wallpaper** | `Super + Alt + Right` |
-| **Previous Wallpaper** | `Super + Alt + Left` |
-| **Wallpaper Menu** | `Super + Shift + W` |
-
-When a wallpaper is changed, **Wallbash** automatically updates the system colors (Kitty, Waybar, Rofi, etc.) to match the new visual profile while preserving the monochrome aesthetic.
 
 ---
 
