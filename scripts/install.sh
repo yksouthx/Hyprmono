@@ -24,7 +24,7 @@ readonly PROJECT="Hyprmono"
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 TARGET_REPO_DIR="$HOME/.local/share/Hyprmono"
-REPO_URL="github.com/s0uth09/Hyprmono"   # <- update to your actual repo
+REPO_URL="github.com/yksouthx/Hyprmono"   # <- update to your actual repo
 
 # Log location is intentionally independent of the repo path — we need
 # somewhere to write to even if repo resolution itself fails.
