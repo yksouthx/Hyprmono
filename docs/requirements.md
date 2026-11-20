@@ -34,13 +34,16 @@ The installation script (`install.sh`) will attempt to install these automatical
 
 ### Core Packages
 - `hyprland`: The tiling compositor.
-- `waybar`: Status bar.
+- `caelestia shell`: Lightweight desktop shell and status UI, installed separately.
 - `kitty`: Terminal emulator.
-- `wofi` / `rofi-wayland`: Application launchers.
-- `dunst` / `swaynotificationcenter`: Notifications.
+- `fuzzel`: Lightweight application launcher.
+- `swaynotificationcenter`: Notification daemon.
 - `hyprpaper`: Wallpaper utility.
 - `hyprlock`: Screen locker.
 - `hypridle`: Idle management daemon.
+- `calm-shell`: Preferred interactive terminal shell, built by the installer from `https://github.com/yksouthx/calm-shell.git`.
+
+Waybar, Wofi, Rofi, Dunst, Swaylock, Fish, and Fastfetch are optional full-UI packages. Pass `--full-ui` to the installer when those components are wanted; the default profile avoids installing or autostarting duplicate desktop-shell components.
 
 ### Utilities & Drivers
 - `pipewire` / `wireplumber`: Audio backend.
@@ -48,6 +51,9 @@ The installation script (`install.sh`) will attempt to install these automatical
 - `network-manager-applet`: Network tray icon.
 - `polkit-kde-agent`: Authentication agent.
 - `xdg-desktop-portal-hyprland`: Wayland portal.
+- `cmake`, `ninja`, `gcc`, and `git`: Build and source prerequisites for Calm-shell.
+
+Use `install.sh --wipe` to remove stale files from previous HyprMono-managed config directories. The installer creates a timestamped backup before wiping.
 
 ### Fonts
 - `ttf-jetbrains-mono-nerd`
@@ -62,3 +68,7 @@ The installation script (`install.sh`) will attempt to install these automatical
 - **NVIDIA Users:** Ensure you have the latest proprietary drivers (`nvidia` or `nvidia-open-dkms`) and have enabled DRM kernel mode setting.
 - **Laptops:** Battery and backlight modules in Waybar are pre-configured but may require specific `sysfs` paths depending on your hardware.
 - **Multi-Monitor:** Hyprland handles multi-monitor setups natively; check `config/hypr/hyprland/monitors.conf` to customize your layout.
+
+## Optional Caelestia shell
+
+HyprMono includes a guarded startup hook for the [Caelestia shell](https://github.com/caelestia-dots/shell). Install the shell and its CLI using the official Arch/AUR or manual instructions. When `caelestia` is available, Hyprland starts it with `caelestia shell -d`; otherwise the hook exits quietly and the regular HyprMono desktop continues to start.

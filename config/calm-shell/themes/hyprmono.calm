@@ -1,0 +1,23 @@
+name = "hyprmono"
+display_name = "HyprMono Monochrome"
+
+[colors]
+black       = "#000000"
+surface     = "#111111"
+border      = "#444444"
+muted       = "#999999"
+foreground  = "#E5E5E5"
+white       = "#FFFFFF"
+
+[prompt]
+icon            = "◆"
+border_color    = "border"
+path_color      = "white"
+git_clean_color = "foreground"
+git_dirty_color = "muted"
+arrow_color     = "foreground"
+
+[terminal]
+background = "black"
+foreground = "foreground"
+cursor     = "white"

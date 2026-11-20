@@ -9,7 +9,7 @@ configuration {
     display-window:      " Windows";
     drun-display-format: "{name}";
     font:                "JetBrainsMono NF 12";
-    terminal:            "kitty";
+    terminal:            "~/.local/bin/launch_terminal.sh";
     case-sensitive:      false;
     cycle:               true;
     normalize-match:     true;

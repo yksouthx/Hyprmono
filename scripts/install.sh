@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # H Y P R M O N O - The Definitive Installer
-# Version: 4.5 (HyDE-style UI pass, bugfixes retained)
+# Version: 4.5
 # Purpose: Robust, path-aware installation for the HyprMono environment.
 
 set -Eeuo pipefail
@@ -36,6 +36,8 @@ LOGFILE="$LOGDIR/install.log"
 NO_MIGRATE=0
 SKIP_PKGS=0
 ASSUME_YES=0
+WIPE_CONFIGS=0
+FULL_UI=0
 
 # --- Colors ---
 RESET="\e[0m"
@@ -192,13 +194,15 @@ resolve_repo_root() {
 
 # --- Package Management ---
 PACMAN_PACKAGES=(
-    hyprland hyprlock hyprpaper hypridle waybar kitty wofi rofi fuzzel
+    git cmake ninja gcc
+    hyprland hyprlock hyprpaper hypridle kitty fuzzel
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
-    swaync dunst wlogout swaylock awww wallbash-git
-    fish fastfetch
+    swaync
 )
+
+OPTIONAL_UI_PACKAGES=(waybar wofi rofi wlogout swaylock dunst fish fastfetch)
 
 # --- Pre-flight system scan ---
 scan_system() {
@@ -241,8 +245,16 @@ install_packages() {
         exit 1
     fi
 
+    local packages=("${PACMAN_PACKAGES[@]}")
+    if [[ "$FULL_UI" -eq 1 ]]; then
+        packages+=("${OPTIONAL_UI_PACKAGES[@]}")
+        info "Full UI package set enabled (--full-ui)."
+    else
+        info "Lightweight package set enabled; Caelestia replaces Waybar."
+    fi
+
     local missing=()
-    for pkg in "${PACMAN_PACKAGES[@]}"; do
+    for pkg in "${packages[@]}"; do
         pacman -Qi "$pkg" &>/dev/null || missing+=("$pkg")
     done
 
@@ -306,6 +318,11 @@ install_configs() {
             log "Backed up $folder_name"
         fi
 
+        if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
+            log "Wiping managed destination $dest"
+            rm -rf -- "$dest"
+        fi
+
         mkdir -p "$dest"
         local entries=("$folder_path"/*)
         if (( ${#entries[@]} > 0 )); then
@@ -333,6 +350,12 @@ install_configs() {
     # Deploy scripts to ~/.local/bin
     title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
+    if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
+        local managed_script
+        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh; do
+            rm -f -- "$LOCAL_BIN/$managed_script"
+        done
+    fi
     for script in "$REPO_ROOT/scripts"/*.sh; do
         if [[ -f "$script" ]]; then
             local script_name=$(basename "$script")
@@ -366,6 +389,9 @@ install_configs() {
     # Deploy assets
     title "Asset Deployment"
     if [[ -d "$REPO_ROOT/assets" ]]; then
+        if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
+            rm -rf -- "$CONFIG_DIR/hypr/assets"
+        fi
         mkdir -p "$CONFIG_DIR/hypr/assets"
         \cp -rf "$REPO_ROOT/assets/"* "$CONFIG_DIR/hypr/assets/"
         ok "Deployed assets to $CONFIG_DIR/hypr/assets"
@@ -385,6 +411,16 @@ install_configs() {
     # stash for the final summary screen
     DEPLOYED_ITEMS=("${deployed[@]}")
     BACKUP_DIR="$backup_dir"
+}
+
+install_calm_shell() {
+    title "Calm-shell Setup"
+    if ask "Build and install Calm-shell from github.com/yksouthx/calm-shell.git?" y; then
+        bash "$REPO_ROOT/scripts/install-calm-shell.sh"
+        ok "Calm-shell is ready at $HOME/.local/bin/calm"
+    else
+        warn "Calm-shell setup skipped; terminal launcher will fall back to Kitty."
+    fi
 }
 
 print_footer() {
@@ -418,6 +454,14 @@ main() {
                ;;
            --skip-pkgs)
                SKIP_PKGS=1
+               shift
+               ;;
+           --wipe|--fresh)
+               WIPE_CONFIGS=1
+               shift
+               ;;
+           --full-ui)
+               FULL_UI=1
                shift
                ;;
            --yes|--non-interactive)
@@ -491,6 +535,9 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
 
     DEPLOYED_ITEMS=()
     BACKUP_DIR="(none created)"
+    if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
+        warn "Wipe mode removes existing managed HyprMono config directories after creating a timestamped backup."
+    fi
     if ask "Proceed with configuration deployment?" y; then
         install_configs
     fi
@@ -516,8 +563,9 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     echo
 
     echo -e "${BOLD}${WHITE}Next${RESET}"
-    echo "  reboot"
-    echo "  hyde"
+    echo "  reboot (or reload Hyprland)"
+    echo "  calm"
+    echo "  caelestia shell -d (if Caelestia is installed)"
     echo
 
     print_footer

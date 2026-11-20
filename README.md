@@ -7,7 +7,7 @@
 </div>
 
 <p align="center">
-  <img src="assets/wallpapers/dark_fantasy_city.jpg" width="800" alt="Dark Fantasy Monochrome Preview" />
+  <img src="assets/wall.webp" width="800" alt="Dark Fantasy Monochrome Preview" />
 </p>
 
 ---
@@ -37,15 +37,14 @@ With the latest update, HyprMono now supports **dynamic monochrome theming** via
 | Component | Description |
 | :--- | :--- |
 | **Hyprland** | Native `.conf` based tiling compositor configuration, heavily modularized. |
-| **Waybar** | Minimalist status bar with custom monochrome modules. |
+| **Caelestia shell** | Lightweight Quickshell desktop shell and status UI. |
 | **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme. |
-| **Wofi / Rofi** | Unified application launchers and window switchers. |
-| **Dunst / SwayNC** | Ported notification systems for seamless visual integration. |
-| **Awww** | The modern, efficient wallpaper daemon (successor to swww). |
-| **Wallbash** | Dynamic theme generation that injects wallpaper-derived accents. |
-| **Fish** | Clean and functional shell configuration. |
-| **Fastfetch** | System information tool with monochrome output. |
+| **Fuzzel** | Lightweight application launcher and emoji picker. |
+| **SwayNC** | Notification daemon for the default profile. |
+| **Hyprpaper** | A lightweight wallpaper daemon for Hyprland. |
+| **Waybar / Wofi / Rofi** | Optional full-UI components, not installed by the lightweight default. |
+| **Calm-shell** | Preferred terminal shell, built from `yksouthx/calm-shell`. |
 
 ---
 
@@ -56,12 +55,11 @@ Ensure you have the following core packages installed (Arch Linux / Pacman):
 
 ```bash
 sudo pacman -S --needed \
-    hyprland hypridle hyprlock waybar kitty wofi rofi-wayland fuzzel \
+    hyprland hypridle hyprlock kitty fuzzel \
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent \
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse \
-    swaynotificationcenter dunst wlogout swaylock-effects \
-    fish fastfetch awww wallbash-git
+    swaynotificationcenter
 ```
 
 ### 2. Setup
@@ -72,19 +70,30 @@ mkdir -p ~/.local/share
 cd ~/.local/share
 git clone https://github.com/yksouthx/Hyprmono.git
 cd Hyprmono
-./hyde install
+bash scripts/install.sh
 ```
 
 The installer will:
 1. Check for required and optional dependencies.
 2. Deploy configurations to `~/.config/`.
-3. Back up existing files as `filename.bak.<timestamp>`.
+3. Back up existing managed directories to `~/.config-backup-<timestamp>/`.
+4. Use the lightweight profile by default; pass `--full-ui` to install optional Waybar/Wofi/Rofi and utility packages.
+
+To remove stale files from previous HyprMono deployments, use the explicit wipe mode. Existing managed directories are backed up before they are removed:
+
+```bash
+bash scripts/install.sh --wipe
+```
+
+Calm-shell is built from [yksouthx/calm-shell](https://github.com/yksouthx/calm-shell) and installed to `~/.local/bin/calm`. The Hyprland terminal launcher prefers it and falls back to Kitty if it is unavailable.
+
+Caelestia is optional because it is distributed separately from this repository. Install the Caelestia shell using the [official installation instructions](https://github.com/caelestia-dots/shell#installation). Once `caelestia` is available, HyprMono starts it automatically with `caelestia shell -d`.
 
 ---
 
-## ◈ Hyde Shell
+## ◈ Management CLI
 
-HyprMono features a centralized management utility: **Hyde Shell**.
+HyprMono includes a small management CLI for installation, updates, audits, and cleanup.
 
 ```bash
 hyde [command]
@@ -107,11 +116,11 @@ Available commands:
 ├── assets/
 │   ├── fonts/
 │   ├── sounds/
-│   └── wallpapers/
+│   └── wall.webp
 ├── config/
-│   ├── awww/          <-- New wallpaper config
 │   ├── hypr/
-│   ├── waybar/
+│   ├── caelestia/
+│   ├── calm-shell/
 │   └── ...
 ├── scripts/
 │   ├── change_wallpaper.sh

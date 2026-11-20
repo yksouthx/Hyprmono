@@ -9,7 +9,7 @@ set -Eeuo pipefail
 CONFIG_DIR="$HOME/.config"
 NEW_PATH="$HOME/.local/share/Hyprmono"
 OLD_PATH="$HOME/Hyprmono"
-TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors)
+TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors caelestia calm-shell)
 
 # --- Colors ---
 RED="\e[38;5;203m"
@@ -73,12 +73,12 @@ main() {
 
     log "Deploying fresh repository to $NEW_PATH..."
     mkdir -p "$HOME/.local/share"
-    git clone https://github.com/s0uth09/Hyprmono.git "$NEW_PATH"
+    git clone https://github.com/yksouthx/Hyprmono.git "$NEW_PATH"
     ok "Deployment successful."
 
     log "Initializing Framework..."
     cd "$NEW_PATH"
-    bash scripts/install.sh --no-migrate
+    bash scripts/install.sh --no-migrate --wipe
 }
 
 main "$@"

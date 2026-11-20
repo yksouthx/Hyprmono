@@ -1,0 +1,9 @@
+[aliases]
+ll = "ls -lah"
+la = "ls -A"
+l = "ls -CF"
+gs = "git status"
+gd = "git diff"
+glog = "git log --oneline --graph --decorate"
+".." = "cd .."
+clear = "printf '\\033c'"

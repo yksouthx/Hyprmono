@@ -1,0 +1,4 @@
+[environment]
+EDITOR = "nvim"
+VISUAL = "nvim"
+PAGER = "less -R"

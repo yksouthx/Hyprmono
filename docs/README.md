@@ -55,12 +55,11 @@ Before installing, please review the [System Requirements](requirements.md) to e
 
 ```bash
 sudo pacman -S --needed \
-    hyprland hyprpaper hypridle waybar kitty wofi rofi-wayland fuzzel \
+    hyprland hyprpaper hypridle kitty fuzzel \
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent \
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
     network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse \
-    swaynotificationcenter dunst wlogout swaylock-effects \
-    fish fastfetch
+    swaynotificationcenter
 ```
 
 ### 2. Setup
@@ -69,7 +68,7 @@ Clone the repository into the standard local share directory and run the automat
 ```bash
 mkdir -p ~/.local/share
 cd ~/.local/share
-git clone https://github.com/s0uth09/Hyprmono.git hyprmono
+git clone https://github.com/yksouthx/Hyprmono.git hyprmono
 cd hyprmono
 bash scripts/install.sh
 ```
@@ -79,12 +78,12 @@ Alternatively, you can use the `hyde` command directly after cloning:
 ```bash
 mkdir -p ~/.local/share
 cd ~/.local/share
-git clone https://github.com/s0uth09/Hyprmono.git hyprmono
+git clone https://github.com/yksouthx/Hyprmono.git hyprmono
 cd hyprmono
 ./hyde install
 ```
 
-The installer will automatically handle backups of your existing configurations and place all files in their correct locations.
+The installer uses the lightweight Caelestia profile by default, automatically handles backups, and places all files in their correct locations. Use `bash scripts/install.sh --full-ui` for optional Waybar/Wofi/Rofi and utility packages, or `bash scripts/install.sh --wipe` to remove stale managed files after creating a timestamped backup.
 
 ---
 

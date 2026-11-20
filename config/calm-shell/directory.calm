@@ -1,0 +1,8 @@
+[directory]
+auto_cd = true
+dir_stack_size = 32
+
+[directory.aliases]
+".." = "cd .."
+"..." = "cd ../.."
+"...." = "cd ../../.."

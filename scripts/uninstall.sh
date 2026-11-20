@@ -8,8 +8,8 @@ set -Eeuo pipefail
 # --- Configuration ---
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
-TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors)
-INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh install.sh launch_first_available.sh reinstall.sh uninstall.sh)
+TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors caelestia calm-shell)
+INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh)
 BACKUP_PREFIX=".config-backup-"
 
 # --- Colors ---

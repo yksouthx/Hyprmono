@@ -1,0 +1,13 @@
+# HyprMono Calm-shell configuration.
+# Topic files are kept separate so Calm-shell can update them safely.
+[shell]
+theme = "hyprmono"
+greeting = true
+
+include "environment.calm"
+include "directory.calm"
+include "history.calm"
+include "keyboard.calm"
+include "terminal.calm"
+include "aliases.calm"
+include "functions.calm"

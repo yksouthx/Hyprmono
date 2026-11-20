@@ -1,0 +1,4 @@
+[history]
+size = 10000
+ignore_dups = true
+share_across_sessions = false

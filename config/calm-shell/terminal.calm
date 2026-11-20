@@ -1,0 +1,10 @@
+[terminal]
+set_title = true
+bell = false
+truecolor = true
+
+[sync]
+sync_terminal = true
+sync_fastfetch = true
+run_fastfetch_on_start = true
+terminal_override = "kitty"

@@ -1,0 +1,28 @@
+{
+    "enabled": true,
+    "paths": {
+        "wallpaperDir": "~/.config/hypr/assets"
+    },
+    "appearance": {
+        "transparency": {
+            "enabled": false
+        },
+        "rounding": {
+            "scale": 0.85
+        },
+        "spacing": {
+            "scale": 0.9
+        },
+        "padding": {
+            "scale": 0.9
+        }
+    },
+    "launcher": {
+        "enabled": true,
+        "maxWallpapers": 9
+    },
+    "dashboard": {
+        "enabled": true,
+        "showOnHover": true
+    }
+}
