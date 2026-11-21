@@ -101,11 +101,14 @@ case "${1:-help}" in
     audit)
         log "Running System Audit..."
         missing=()
-        for bin in hyprland waybar kitty wofi dunst; do
+        for bin in hyprland hyprpaper hypridle kitty fuzzel swaync; do
             if ! command -v "$bin" &> /dev/null; then
                 missing+=("$bin")
             fi
         done
+        if ! command -v caelestia &> /dev/null && ! command -v qs &> /dev/null; then
+            missing+=("caelestia-shell")
+        fi
         if [ ${#missing[@]} -eq 0 ]; then
             log "${GREEN}Audit successful: Core components present.${RESET}"
         else

@@ -35,6 +35,7 @@ LOGFILE="$LOGDIR/install.log"
 # --- Flags (set via CLI args in main()) ---
 NO_MIGRATE=0
 SKIP_PKGS=0
+SKIP_AUR=0
 ASSUME_YES=0
 WIPE_CONFIGS=0
 FULL_UI=0
@@ -204,6 +205,11 @@ PACMAN_PACKAGES=(
 
 OPTIONAL_UI_PACKAGES=(waybar wofi rofi wlogout swaylock dunst fish fastfetch)
 
+# The shell package carries Caelestia's upstream QML, icons, animations, and
+# fonts. Keep these in the AUR package instead of copying upstream assets into
+# HyprMono, so the shell and its resources stay version-matched.
+CAELESTIA_AUR_PACKAGES=(caelestia-cli caelestia-shell)
+
 # --- Pre-flight system scan ---
 scan_system() {
     title "System Scan"
@@ -271,6 +277,43 @@ install_packages() {
         fi
     else
         ok "All dependencies met."
+    fi
+}
+
+find_aur_helper() {
+    if has paru; then
+        printf '%s\n' paru
+    elif has yay; then
+        printf '%s\n' yay
+    else
+        return 1
+    fi
+}
+
+install_aur_packages() {
+    if [[ "$SKIP_AUR" -eq 1 ]]; then
+        info "Skipping AUR packages (--skip-aur)."
+        return 0
+    fi
+
+    local helper
+    if ! helper=$(find_aur_helper); then
+        warn "Neither paru nor yay was found; Caelestia shell and its official asset bundle were not installed."
+        info "Install an AUR helper, then run this installer again, or use --skip-aur."
+        return 0
+    fi
+
+    info "Using AUR helper: $helper"
+    if ask "Install Caelestia shell and CLI from the AUR with $helper?" y; then
+        ("$helper" -S --needed --noconfirm "${CAELESTIA_AUR_PACKAGES[@]}" &>>"$LOGFILE") &
+        spinner $! "Installing Caelestia and its upstream assets..."
+        wait $! || {
+            err "AUR helper failed to install Caelestia packages."
+            return 1
+        }
+        ok "Caelestia shell, CLI, and bundled assets installed."
+    else
+        warn "Caelestia AUR setup skipped; the guarded launcher will remain inactive until it is installed."
     fi
 }
 
@@ -456,6 +499,10 @@ main() {
                SKIP_PKGS=1
                shift
                ;;
+           --skip-aur)
+               SKIP_AUR=1
+               shift
+               ;;
            --wipe|--fresh)
                WIPE_CONFIGS=1
                shift
@@ -533,6 +580,8 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
         install_packages
     fi
 
+    install_aur_packages
+
     DEPLOYED_ITEMS=()
     BACKUP_DIR="(none created)"
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
@@ -540,6 +589,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     fi
     if ask "Proceed with configuration deployment?" y; then
         install_configs
+        install_calm_shell
     fi
 
     title "Installation Complete"

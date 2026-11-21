@@ -43,6 +43,10 @@ The installation script (`install.sh`) will attempt to install these automatical
 - `hypridle`: Idle management daemon.
 - `calm-shell`: Preferred interactive terminal shell, built by the installer from `https://github.com/yksouthx/calm-shell.git`.
 
+### AUR packages
+
+If `paru` or `yay` is installed, the installer uses it for `caelestia-cli` and `caelestia-shell`. The official shell package supplies Caelestia's QML, icons, animations, fonts, and runtime assets. Pass `--skip-aur` to skip AUR installation.
+
 Waybar, Wofi, Rofi, Dunst, Swaylock, Fish, and Fastfetch are optional full-UI packages. Pass `--full-ui` to the installer when those components are wanted; the default profile avoids installing or autostarting duplicate desktop-shell components.
 
 ### Utilities & Drivers

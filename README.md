@@ -78,6 +78,7 @@ The installer will:
 2. Deploy configurations to `~/.config/`.
 3. Back up existing managed directories to `~/.config-backup-<timestamp>/`.
 4. Use the lightweight profile by default; pass `--full-ui` to install optional Waybar/Wofi/Rofi and utility packages.
+5. Detect `paru` or `yay` and use it to install the official `caelestia-cli` and `caelestia-shell` AUR packages.
 
 To remove stale files from previous HyprMono deployments, use the explicit wipe mode. Existing managed directories are backed up before they are removed:
 
@@ -87,7 +88,7 @@ bash scripts/install.sh --wipe
 
 Calm-shell is built from [yksouthx/calm-shell](https://github.com/yksouthx/calm-shell) and installed to `~/.local/bin/calm`. The Hyprland terminal launcher prefers it and falls back to Kitty if it is unavailable.
 
-Caelestia is optional because it is distributed separately from this repository. Install the Caelestia shell using the [official installation instructions](https://github.com/caelestia-dots/shell#installation). Once `caelestia` is available, HyprMono starts it automatically with `caelestia shell -d`.
+When `paru` or `yay` is available, the installer installs the official [Caelestia CLI](https://aur.archlinux.org/packages/caelestia-cli) and [Caelestia shell](https://aur.archlinux.org/packages/caelestia-shell) packages. The shell package supplies the upstream QML, icons, animations, fonts, and runtime assets; HyprMono only keeps the local integration config and wallpaper. Use `--skip-aur` to omit this step.
 
 ---
 
