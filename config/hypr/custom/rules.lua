@@ -1,0 +1,1 @@
+-- Personal window and layer rules. Loaded after the main config.

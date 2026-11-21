@@ -36,7 +36,7 @@ With the latest update, HyprMono now supports **dynamic monochrome theming** via
 
 | Component | Description |
 | :--- | :--- |
-| **Hyprland** | Native `.conf` based tiling compositor configuration, heavily modularized. |
+| **Hyprland** | Current official Lua-based configuration, split into a main module and user overrides. |
 | **Caelestia shell** | Lightweight Quickshell desktop shell and status UI. |
 | **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme. |
@@ -89,6 +89,12 @@ bash scripts/install.sh --wipe
 Calm-shell is built from [yksouthx/calm-shell](https://github.com/yksouthx/calm-shell) and installed to `~/.local/bin/calm`. The Hyprland terminal launcher prefers it and falls back to Kitty if it is unavailable.
 
 When `paru` or `yay` is available, the installer installs the official [Caelestia CLI](https://aur.archlinux.org/packages/caelestia-cli) and [Caelestia shell](https://aur.archlinux.org/packages/caelestia-shell) packages. The shell package supplies the upstream QML, icons, animations, fonts, and runtime assets; HyprMono only keeps the local integration config and wallpaper. Use `--skip-aur` to omit this step.
+
+HyprMono follows the current Hyprland Lua configuration API. The installed entrypoint is
+`~/.config/hypr/hyprland.lua`; the monochrome palette lives in
+`~/.config/hypr/modules/colours.lua`, and personal changes belong in
+`~/.config/hypr/custom/*.lua`, which are loaded after the defaults. This avoids mixing
+the legacy native `.conf` syntax with the current official wiki format.
 
 ---
 

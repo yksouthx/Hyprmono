@@ -34,7 +34,7 @@ HyprMono is built on the principle of **visual silence**. By stripping away colo
 
 | Component | Description |
 | :--- | :--- |
-| **Hyprland** | Native `.conf` based tiling compositor configuration, heavily modularized. |
+| **Hyprland** | Current official Lua-based tiling compositor configuration, heavily modularized. |
 | **Waybar** | Minimalist status bar with custom monochrome modules. |
 | **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme and Nothing OS font. |
@@ -114,11 +114,11 @@ Available commands:
 
 | Key | Action |
 | :--- | :--- |
-| `Super + Return` | Open Terminal (Kitty) |
+| `Super + Return` | Open Terminal (Calm-shell, with Kitty fallback) |
 | `Super + B` | Launch Browser |
 | `Super + E` | Open File Manager |
 | `Super + R` | Application Launcher |
-| `Super + Q` | Close Active Window |
+| `Alt + F4` | Close Active Window |
 | `Super + M` | Exit Hyprland |
 | `Super + 1-0` | Switch Workspaces |
 | `Super + Shift + 1-0` | Move Window to Workspace |
@@ -127,14 +127,14 @@ Available commands:
 
 ## ◈ Configuration Structure
 
-The configuration has been refactored for maximum modularity. You can find the main entry points here:
+The configuration follows the current official Hyprland Lua API. You can find the main entry points here:
 
-- **Hyprland Variables:** `~/.config/hypr/hyprland/variables.conf`
-- **Keybinds:** `~/.config/hypr/hyprland/binds/` (Split into apps, media, windows, workspaces)
-- **General Settings:** `~/.config/hypr/hyprland/general/`
+- **Hyprland entrypoint:** `~/.config/hypr/hyprland.lua`
+- **Monochrome palette:** `~/.config/hypr/modules/colours.lua`
+- **Personal overrides:** `~/.config/hypr/custom/*.lua` (loaded last)
 - **Kitty Settings:** `~/.config/kitty/` (Split into font, keybinds, appearance, theme)
 
-To change the monochrome palette, simply update the hex values in `variables.conf` and reload Hyprland with `Super + Shift + R`.
+To change the monochrome palette, update `modules/colours.lua` and reload Hyprland with `hyprctl reload`.
 
 ### File Tree
 
