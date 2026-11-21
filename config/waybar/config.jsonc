@@ -15,7 +15,6 @@
     "battery",
     "custom/gpuinfo",
     "custom/cpuinfo",
-    "custom/wallpaper",
     "custom/swaync"
   ],
 
@@ -46,8 +45,8 @@
 
   "backlight": {
     "format": "󰃠 {percent}%",
-    "on-scroll-up": "brightnesscontrol i 1",
-    "on-scroll-down": "brightnesscontrol d 1"
+    "on-scroll-up": "brightnessctl -e4 -n2 set 1%+",
+    "on-scroll-down": "brightnessctl -e4 -n2 set 1%-"
   },
 
   "battery": {

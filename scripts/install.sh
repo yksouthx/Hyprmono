@@ -268,12 +268,14 @@ install_packages() {
         warn "Missing packages: ${missing[*]}"
         if ask "Install missing dependencies?" y; then
             (sudo pacman -S --needed --noconfirm "${missing[@]}" &>>"$LOGFILE") &
-            spinner $! "Installing packages..."
-            wait $! || {
-                err "Pacman failed to install some packages."
+            local pm_pid=$!
+            spinner "$pm_pid" "Installing packages..."
+            if wait "$pm_pid"; then
+                ok "Package installation finished."
+            else
+                err "Pacman failed to install some packages (see $LOGFILE)."
                 info "If you need AUR packages like 'swaylock-effects' or 'rofi-wayland', please use an AUR helper (yay/paru)."
-            }
-            ok "Package installation finished."
+            fi
         fi
     else
         ok "All dependencies met."
@@ -306,15 +308,48 @@ install_aur_packages() {
     info "Using AUR helper: $helper"
     if ask "Install Caelestia shell and CLI from the AUR with $helper?" y; then
         ("$helper" -S --needed --noconfirm "${CAELESTIA_AUR_PACKAGES[@]}" &>>"$LOGFILE") &
-        spinner $! "Installing Caelestia and its upstream assets..."
-        wait $! || {
-            err "AUR helper failed to install Caelestia packages."
-            return 1
-        }
-        ok "Caelestia shell, CLI, and bundled assets installed."
+        local aur_pid=$!
+        spinner "$aur_pid" "Installing Caelestia and its upstream assets..."
+        if wait "$aur_pid"; then
+            ok "Caelestia shell, CLI, and bundled assets installed."
+        else
+            warn "AUR helper failed to install Caelestia packages (see $LOGFILE); continuing with config deployment."
+        fi
     else
         warn "Caelestia AUR setup skipped; the guarded launcher will remain inactive until it is installed."
     fi
+}
+
+# --- Backup bookkeeping ---
+# The first backup ever taken holds the user's *original* configs. Later runs
+# (e.g. `hyprmono update`) back up Hyprmono's own previous install, so the original
+# is recorded separately, never pruned, and is what uninstall restores.
+ORIGINAL_BACKUP_FILE="$LOGDIR/original-backup"
+KEEP_BACKUPS=5
+
+record_original_backup() {
+    local dir="$1"
+    if [[ ! -s "$ORIGINAL_BACKUP_FILE" ]]; then
+        printf '%s\n' "$dir" > "$ORIGINAL_BACKUP_FILE"
+        log "Recorded $dir as the original-config backup"
+    fi
+}
+
+prune_backups() {
+    local original=""
+    [[ -s "$ORIGINAL_BACKUP_FILE" ]] && original=$(< "$ORIGINAL_BACKUP_FILE")
+
+    local old=()
+    mapfile -t old < <(
+        find "$HOME" -maxdepth 1 -type d -name '.config-backup-*' -printf '%f\n' 2>/dev/null |
+            sort -r | tail -n +"$((KEEP_BACKUPS + 1))"
+    )
+    local b
+    for b in "${old[@]}"; do
+        [[ -n "$b" && "$HOME/$b" != "$original" ]] || continue
+        rm -rf -- "${HOME:?}/$b"
+        log "Pruned old backup $HOME/$b"
+    done
 }
 
 # --- Core Installation ---
@@ -331,6 +366,7 @@ install_configs() {
     log "Starting backup..."
     local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$backup_dir"
+    record_original_backup "$backup_dir"
 
     local deployed=()
     local folders=("$source_config"/*/)
@@ -361,6 +397,14 @@ install_configs() {
             log "Backed up $folder_name"
         fi
 
+        # hypr/custom/*.lua are the user's personal overrides: never clobber them
+        # with the empty stubs from the repo, not even in --wipe mode.
+        local preserved_custom=""
+        if [[ "$folder_name" == hypr && -d "$dest/custom" ]]; then
+            preserved_custom=$(mktemp -d)
+            \cp -a "$dest/custom/." "$preserved_custom/"
+        fi
+
         if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
             log "Wiping managed destination $dest"
             rm -rf -- "$dest"
@@ -371,11 +415,28 @@ install_configs() {
         if (( ${#entries[@]} > 0 )); then
             \cp -rf "$folder_path/"* "$dest/"
         fi
+
+        if [[ -n "$preserved_custom" ]]; then
+            mkdir -p "$dest/custom"
+            \cp -a "$preserved_custom/." "$dest/custom/"
+            rm -rf -- "$preserved_custom"
+            info "Preserved your hypr/custom overrides"
+        fi
         log "Deployed $folder_name"
 
         deployed+=("$folder_name")
         progress "$count" "$total"
     done
+
+    # Scripts that Hyprland tools execute directly must carry the exec bit.
+    if [[ -d "$CONFIG_DIR/hypr/hyprlock" ]]; then
+        find "$CONFIG_DIR/hypr/hyprlock" -type f -name '*.sh' -exec chmod +x {} +
+    fi
+    if [[ -f "$CONFIG_DIR/waybar/keybinds.sh" ]]; then
+        chmod +x "$CONFIG_DIR/waybar/keybinds.sh"
+    fi
+
+    prune_backups
 
     # Tree-style summary of what was deployed
     echo -e "\n${BOLD}${WHITE}Configuration${RESET}"
@@ -395,7 +456,7 @@ install_configs() {
     mkdir -p "$LOCAL_BIN"
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
         local managed_script
-        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh; do
+        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh; do
             rm -f -- "$LOCAL_BIN/$managed_script"
         done
     fi
@@ -423,11 +484,19 @@ install_configs() {
         fi
     done
 
-    # Create 'hyde' command symlink
-    if [[ -f "$LOCAL_BIN/hyde-shell.sh" ]]; then
-        ln -sf "$LOCAL_BIN/hyde-shell.sh" "$LOCAL_BIN/hyde"
-        ok "Linked 'hyde' command"
+    # Create 'hyprmono' command symlink
+    if [[ -f "$LOCAL_BIN/hyprmono.sh" ]]; then
+        ln -sf "$LOCAL_BIN/hyprmono.sh" "$LOCAL_BIN/hyprmono"
+        ok "Linked 'hyprmono' command"
     fi
+
+    # Clean up the CLI's old name (hyde / hyde-shell.sh) from previous installs.
+    # Only touch the symlink if it is ours.
+    if [[ -L "$LOCAL_BIN/hyde" && "$(readlink "$LOCAL_BIN/hyde")" == */hyde-shell.sh ]]; then
+        rm -f -- "$LOCAL_BIN/hyde"
+        info "Removed legacy 'hyde' command (now 'hyprmono')"
+    fi
+    rm -f -- "$LOCAL_BIN/hyde-shell.sh"
 
     # Deploy assets
     title "Asset Deployment"
@@ -567,9 +636,13 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
         warn "Repository is at $REPO_ROOT instead of $TARGET_REPO_DIR"
         if ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
             mkdir -p "$TARGET_REPO_DIR"
-            \cp -rf "$REPO_ROOT/"* "$TARGET_REPO_DIR/"
+            # "/." copies dotfiles too, so .git survives and `hyprmono update` keeps working
+            \cp -a "$REPO_ROOT/." "$TARGET_REPO_DIR/"
             ok "Migration complete."
             info "Continuing install from $TARGET_REPO_DIR..."
+            # exec skips the EXIT trap, so stop the sudo keep-alive loop ourselves
+            # (the re-executed installer starts its own).
+            kill "${SUDO_KEEPALIVE_PID:-}" 2>/dev/null || true
             exec "$TARGET_REPO_DIR/scripts/$SELF_NAME" "${ORIG_ARGS[@]}" --no-migrate
         fi
     fi

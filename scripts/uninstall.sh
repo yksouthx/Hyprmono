@@ -9,8 +9,10 @@ set -Eeuo pipefail
 CONFIG_DIR="$HOME/.config"
 LOCAL_BIN="$HOME/.local/bin"
 TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors caelestia calm-shell)
-INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh)
+INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh)
 BACKUP_PREFIX=".config-backup-"
+# install.sh records the very first backup (the user's original configs) here.
+ORIGINAL_BACKUP_FILE="$HOME/.cache/Hyprmono/original-backup"
 
 # --- Colors ---
 RED="\e[38;5;203m"
@@ -45,7 +47,7 @@ remove_configs() {
     log "Removing HyprMono configurations..."
     for target in "${TARGETS[@]}"; do
         if [[ -d "$CONFIG_DIR/$target" ]]; then
-            rm -rf -- "$CONFIG_DIR/$target"
+            rm -rf -- "${CONFIG_DIR:?}/$target"
             ok "Removed $CONFIG_DIR/$target"
         fi
     done
@@ -64,11 +66,20 @@ remove_installed_scripts() {
 restore_latest_backup() {
     log "Searching for latest backup..."
 
-    local latest_backup
-    latest_backup=$(find "$HOME" -maxdepth 1 -type d -name "${BACKUP_PREFIX}*" -printf '%f\n' 2>/dev/null | sort -r | head -n 1 || true)
+    # Prefer the backup of the user's ORIGINAL configs. The newest backup is
+    # usually just the previous HyprMono install, which is not what they want back.
+    local latest_backup=""
+    if [[ -s "$ORIGINAL_BACKUP_FILE" ]]; then
+        latest_backup=$(< "$ORIGINAL_BACKUP_FILE")
+        [[ -d "$latest_backup" ]] || latest_backup=""
+    fi
+    if [[ -z "$latest_backup" ]]; then
+        local newest
+        newest=$(find "$HOME" -maxdepth 1 -type d -name "${BACKUP_PREFIX}*" -printf '%f\n' 2>/dev/null | sort -r | head -n 1 || true)
+        [[ -n "$newest" ]] && latest_backup="$HOME/$newest"
+    fi
 
     if [[ -n "$latest_backup" ]]; then
-        latest_backup="$HOME/$latest_backup"
         warn "Found backup: $latest_backup"
         confirm "Restore this backup?"
 

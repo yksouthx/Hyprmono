@@ -73,32 +73,32 @@ cd hyprmono
 bash scripts/install.sh
 ```
 
-Alternatively, you can use the `hyde` command directly after cloning:
+Alternatively, you can use the `hyprmono` command directly after cloning:
 
 ```bash
 mkdir -p ~/.local/share
 cd ~/.local/share
 git clone https://github.com/yksouthx/Hyprmono.git hyprmono
 cd hyprmono
-./hyde install
+bash scripts/hyprmono.sh install
 ```
 
 The installer uses the lightweight Caelestia profile by default, automatically handles backups, and places all files in their correct locations. Use `bash scripts/install.sh --full-ui` for optional Waybar/Wofi/Rofi and utility packages, or `bash scripts/install.sh --wipe` to remove stale managed files after creating a timestamped backup.
 
 ---
 
-## ◈ Hyde Shell
+## ◈ Management CLI
 
-HyprMono features a centralized management utility: **Hyde Shell**.
+HyprMono features a centralized management utility: **hyprmono**.
 
 ```bash
-~/.local/share/hyprmono/hyde [command]
+~/.local/share/hyprmono/scripts/hyprmono.sh [command]
 ```
 
-For convenience, a symlink `hyde` is created in `~/.local/bin/`, so you can simply run:
+For convenience, a symlink `hyprmono` is created in `~/.local/bin/`, so you can simply run:
 
 ```bash
-hyde [command]
+hyprmono [command]
 ```
 
 Available commands:
@@ -156,11 +156,10 @@ To change the monochrome palette, update `modules/colours.lua` and reload Hyprla
 │   ├── requirements.md
 │   └── SECURITY.md
 ├── scripts/
-│   ├── hyde-shell.sh
+│   ├── hyprmono.sh
 │   ├── install.sh
 │   ├── reinstall.sh
 │   └── uninstall.sh
-├── hyde -> scripts/hyde-shell.sh
 ├── install.sh -> scripts/install.sh
 └── uninstall.sh -> scripts/uninstall.sh
 ```
@@ -172,13 +171,13 @@ To change the monochrome palette, update `modules/colours.lua` and reload Hyprla
 To safely remove the configuration and restore your previous setup:
 
 ```bash
-hyde uninstall
+hyprmono uninstall
 ```
 
 If you wish to completely wipe your local configs and reinstall a fresh copy from GitHub:
 
 ```bash
-hyde reinstall
+hyprmono reinstall
 ```
 
 ---
