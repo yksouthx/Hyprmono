@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# H Y D E   S H E L L - The Definitive CLI
+# H Y P R M O N O - The Definitive CLI
 # Centralized entry point for the HyprMono environment.
 
 set -Eeuo pipefail
@@ -41,8 +41,8 @@ BOLD="\e[1m"
 RESET="\e[0m"
 
 # --- Helpers ---
-log() { echo -e "${CYAN}hyde >${RESET} $*"; }
-err() { echo -e "${RED}hyde error >${RESET} $*" >&2; }
+log() { echo -e "${CYAN}hyprmono >${RESET} $*"; }
+err() { echo -e "${RED}hyprmono error >${RESET} $*" >&2; }
 
 run_repo_script() {
     local script_name="$1"
@@ -59,13 +59,13 @@ run_repo_script() {
 }
 
 show_help() {
-    echo -e "${BOLD}${MAGENTA}H Y D E   S H E L L${RESET} - HyprMono Management"
+    echo -e "${BOLD}${MAGENTA}H Y P R M O N O${RESET} - HyprMono Management"
     echo
-    echo -e "${BOLD}Usage:${RESET} hyde [command]"
+    echo -e "${BOLD}Usage:${RESET} hyprmono [command]"
     echo
     echo -e "${BOLD}Commands:${RESET}"
     echo -e "  install     Execute the professional installer"
-    echo -e "  reinstall   Wipe and perform a fresh install from GitHub"
+    echo -e "  reinstall   Fresh clone from GitHub and redeploy (configs are backed up first)"
     echo -e "  uninstall   Completely remove all configurations"
     echo -e "  update      Pull latest repository changes and sync"
     echo -e "  audit       Verify system dependencies"

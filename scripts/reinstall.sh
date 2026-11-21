@@ -6,10 +6,9 @@
 set -Eeuo pipefail
 
 # --- Configuration ---
-CONFIG_DIR="$HOME/.config"
 NEW_PATH="$HOME/.local/share/Hyprmono"
-OLD_PATH="$HOME/Hyprmono"
-TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors caelestia calm-shell)
+# Override to reinstall from a fork or a local mirror.
+REPO_URL="${HYPRMONO_REPO_URL:-https://github.com/yksouthx/Hyprmono.git}"
 
 # --- Colors ---
 RED="\e[38;5;203m"
@@ -42,7 +41,9 @@ confirm() {
 main() {
     [[ -t 1 ]] && clear
     printf '%bHyprMono Fresh Reinstallation%b\n' "${BOLD}" "${RESET}"
-    printf 'Warning: This will wipe your current configurations and pull a fresh copy from GitHub.\n\n'
+    printf 'This replaces the repository checkout and re-deploys all managed configs.\n'
+    printf 'Existing configs are backed up to ~/.config-backup-<timestamp> first;\n'
+    printf 'your hypr/custom overrides are kept.\n\n'
 
     if [[ $EUID -eq 0 ]]; then
         err "Do not run this script as root."
@@ -56,26 +57,31 @@ main() {
 
     confirm "Proceed with total reset?"
 
-    log "Wiping existing configurations..."
-    for target in "${TARGETS[@]}"; do
-        if [[ -d "$CONFIG_DIR/$target" ]]; then
-            rm -rf -- "$CONFIG_DIR/$target"
-            ok "Cleared $target"
-        fi
-    done
-
-    for dir in "$OLD_PATH" "$NEW_PATH"; do
-        if [[ -d "$dir" ]]; then
-            log "Clearing repository at $dir..."
-            rm -rf -- "$dir"
-        fi
-    done
-
-    log "Deploying fresh repository to $NEW_PATH..."
+    # Clone FIRST. If this fails (offline, bad URL) nothing has been touched yet.
+    local tmp_clone
     mkdir -p "$HOME/.local/share"
-    git clone https://github.com/yksouthx/Hyprmono.git "$NEW_PATH"
-    ok "Deployment successful."
+    tmp_clone=$(mktemp -d "$HOME/.local/share/.hyprmono-reinstall.XXXXXX")
+    # shellcheck disable=SC2064
+    trap "rm -rf -- '$tmp_clone'" EXIT
 
+    log "Fetching a fresh copy of the repository..."
+    if ! git clone --quiet "$REPO_URL" "$tmp_clone/repo"; then
+        err "git clone failed; nothing was changed."
+        exit 1
+    fi
+    ok "Fetched $REPO_URL"
+
+    # Move the old checkout aside instead of deleting it: it may hold local edits.
+    if [[ -e "$NEW_PATH" ]]; then
+        local old_checkout
+        old_checkout="$NEW_PATH.old-$(date +%Y%m%d-%H%M%S)"
+        mv -- "$NEW_PATH" "$old_checkout"
+        ok "Previous checkout kept at $old_checkout"
+    fi
+    mv -- "$tmp_clone/repo" "$NEW_PATH"
+    ok "Deployed fresh repository to $NEW_PATH"
+
+    # install.sh --wipe backs up every managed directory before removing it.
     log "Initializing Framework..."
     cd "$NEW_PATH"
     bash scripts/install.sh --no-migrate --wipe

@@ -103,12 +103,12 @@ the legacy native `.conf` syntax with the current official wiki format.
 HyprMono includes a small management CLI for installation, updates, audits, and cleanup.
 
 ```bash
-hyde [command]
+hyprmono [command]
 ```
 
 Available commands:
 - `install`: Run the main installation script.
-- `reinstall`: Completely wipe local configs and reinstall from GitHub.
+- `reinstall`: Fresh clone from GitHub and redeploy all configs (previous configs are backed up; `hypr/custom` is kept).
 - `uninstall`: Remove all HyprMono configurations.
 - `update`: Pull latest changes and sync configurations.
 - `audit`: Perform a system check for dependencies.
@@ -131,9 +131,9 @@ Available commands:
 │   └── ...
 ├── scripts/
 │   ├── change_wallpaper.sh
-│   ├── hyde-shell.sh
+│   ├── hyprmono.sh
 │   └── install.sh
-└── hyde -> scripts/hyde-shell.sh
+└── (installer links scripts/hyprmono.sh to ~/.local/bin/hyprmono)
 ```
 
 ---
@@ -142,12 +142,12 @@ Available commands:
 
 To safely remove the configuration:
 ```bash
-hyde uninstall
+hyprmono uninstall
 ```
 
 To perform a fresh reinstall:
 ```bash
-hyde reinstall
+hyprmono reinstall
 ```
 
 ---
