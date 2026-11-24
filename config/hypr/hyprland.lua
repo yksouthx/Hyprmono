@@ -26,8 +26,6 @@ hl.env("HYPRCURSOR_THEME", "rose-pine-hyprcursor")
 hl.env("HYPRCURSOR_SIZE", "32")
 hl.env("XCURSOR_SIZE", "32")
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
--- Caelestia's lightweight shell profile.
-hl.env("qsConfig", "ii")
 
 -----------------------
 ----- PERMISSIONS -----
@@ -40,6 +38,7 @@ hl.config({
 })
 hl.permission("/usr/(bin|local/bin)/grim", "screencopy", "allow")
 hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow")
+hl.permission("/usr/(bin|local/bin)/quickshell", "screencopy", "allow")
 hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
 
 -----------------------
@@ -210,7 +209,8 @@ hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
 hl.on("hyprland.start", function()
     hl.exec_cmd("nm-applet --indicator")
     hl.exec_cmd("hyprpaper")
-    hl.exec_cmd("hypridle -c $HOME/.config/hypr/hyprlock/hypridle.conf")
+    -- Caelestia owns idle + lock; this only starts hypridle when Caelestia is missing.
+    hl.exec_cmd("$HOME/.local/bin/start-idle.sh")
     hl.exec_cmd("$HOME/.local/bin/start-caelestia.sh")
 end)
 
@@ -256,6 +256,17 @@ hl.bind(main_mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(main_mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(main_mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(main_mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- Caelestia shell panels. Global shortcuts are harmless no-ops if the shell isn't running.
+hl.bind("SUPER + SUPER_L", hl.dsp.global("caelestia:launcher"), { release = true })
+hl.bind("CTRL + ALT + Delete", hl.dsp.global("caelestia:session"))
+hl.bind(main_mod .. " + N", hl.dsp.global("caelestia:sidebar"))
+hl.bind(main_mod .. " + K", hl.dsp.global("caelestia:showall"))
+hl.bind("CTRL + ALT + C", hl.dsp.global("caelestia:clearNotifs"), { locked = true })
+-- Lock: Caelestia's lock screen when the shell is running, hyprlock otherwise.
+hl.bind(main_mod .. " + L", hl.dsp.exec_cmd(
+    "pgrep -x quickshell >/dev/null && hyprctl dispatch 'hl.dsp.global(\"caelestia:lock\")' "
+    .. "|| pidof hyprlock || hyprlock -c \"$HOME/.config/hypr/hyprlock/hyprlock.conf\""))
 
 local media_binds = {
     { "XF86AudioRaiseVolume", "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+", true },
