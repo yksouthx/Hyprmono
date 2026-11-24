@@ -235,6 +235,8 @@ PACMAN_PACKAGES=(
 
 OPTIONAL_PACKAGES=(fastfetch yazi)
 CALM_BUILD_PACKAGES=(cmake ninja gcc)
+CONFIG_SOURCES=()
+CONFIG_TARGETS=()
 
 # The shell package carries Caelestia's upstream QML, icons, animations, and
 # fonts. Keep these in the AUR package instead of copying upstream assets into
@@ -280,6 +282,44 @@ component_selected() {
         [[ "$selected" == "$1" ]] && return 0
     done
     return 1
+}
+
+collect_config_deployments() {
+    local source_config="$REPO_ROOT/config"
+    local folder_path folder_name
+
+    CONFIG_SOURCES=()
+    CONFIG_TARGETS=()
+
+    for folder_path in "$source_config"/*/; do
+        folder_name=$(basename "${folder_path%/}")
+        case "$folder_name" in
+            Hyprland)
+                CONFIG_SOURCES+=("$folder_path/hypr")
+                CONFIG_TARGETS+=(hypr)
+                ;;
+            quickshell)
+                CONFIG_SOURCES+=("$folder_path")
+                CONFIG_TARGETS+=(hyprmono)
+                if [[ -d "$folder_path/caelestia" ]]; then
+                    CONFIG_SOURCES+=("$folder_path/caelestia")
+                    CONFIG_TARGETS+=(caelestia)
+                fi
+                ;;
+            fastfetch)
+                if component_selected "$folder_name"; then
+                    CONFIG_SOURCES+=("$folder_path")
+                    CONFIG_TARGETS+=("$folder_name")
+                else
+                    info "Skipping unselected optional $folder_name configuration."
+                fi
+                ;;
+            *)
+                CONFIG_SOURCES+=("$folder_path")
+                CONFIG_TARGETS+=("$folder_name")
+                ;;
+        esac
+    done
 }
 
 # --- Pre-flight system scan ---
@@ -349,14 +389,6 @@ can_write_target() {
     [[ -d "$parent" && -w "$parent" ]]
 }
 
-config_target_name() {
-    case "$1" in
-        hyprland) printf 'hypr\n' ;;
-        quickshell) printf 'hyprmono\n' ;;
-        *) printf '%s\n' "$1" ;;
-    esac
-}
-
 run_environment_tests() {
     local failures=0
     local missing=()
@@ -390,7 +422,7 @@ run_environment_tests() {
     fi
 
     if [[ -d "$REPO_ROOT/config" &&
-        -f "$REPO_ROOT/config/hyprland/hyprland.lua" &&
+        -f "$REPO_ROOT/config/Hyprland/hypr/hyprland.lua" &&
         -f "$REPO_ROOT/config/quickshell/shell.qml" &&
         -f "$REPO_ROOT/scripts/migrate.sh" ]]; then
         ok "Required repository files are present"
@@ -469,6 +501,7 @@ install_packages() {
             else
                 err "Pacman failed to install some packages (see $LOGFILE)."
                 info "If you need Caelestia shell packages, use an AUR helper (yay/paru) or pass --skip-aur."
+                return 1
             fi
         fi
     else
@@ -556,30 +589,15 @@ install_configs() {
     fi
 
     local deployed=()
-    local folders=("$source_config"/*/)
-    local deploy_folders=()
-    local folder_path folder_name
-    for folder_path in "${folders[@]}"; do
-        folder_name=$(basename "${folder_path%/}")
-        case "$folder_name" in
-            fastfetch)
-                if ! component_selected "$folder_name"; then
-                    info "Skipping unselected optional $folder_name configuration."
-                    continue
-                fi
-                ;;
-        esac
-        deploy_folders+=("$folder_path")
-    done
-    folders=("${deploy_folders[@]}")
-    local total=${#folders[@]}
+    collect_config_deployments
+    local total=${#CONFIG_SOURCES[@]}
     local count=0
+    local folder_path folder_name
 
     if [[ "$DRY_RUN" -eq 1 ]]; then
-        for folder_path in "${folders[@]}"; do
-            local folder_name
-            folder_name=$(basename "${folder_path%/}")
-            info "Dry run: would deploy $(config_target_name "$folder_name") to $CONFIG_DIR/"
+        local index
+        for index in "${!CONFIG_SOURCES[@]}"; do
+            info "Dry run: would deploy ${CONFIG_TARGETS[$index]} to $CONFIG_DIR/"
         done
         info "Dry run: would deploy runtime scripts and assets; no backup or files created."
         return 0
@@ -591,11 +609,11 @@ install_configs() {
     mkdir -p "$backup_dir"
     record_original_backup "$backup_dir"
 
-    for folder_path in "${folders[@]}"; do
-        folder_path="${folder_path%/}"
-        local folder_name=$(basename "$folder_path")
-        local target_name
-        target_name=$(config_target_name "$folder_name")
+    local index
+    for index in "${!CONFIG_SOURCES[@]}"; do
+        folder_path="${CONFIG_SOURCES[$index]%/}"
+        folder_name=$(basename "$folder_path")
+        local target_name="${CONFIG_TARGETS[$index]}"
         count=$((count + 1))
 
         printf "\n${DIM}  → %s${RESET}\n" "$folder_name"
@@ -636,9 +654,13 @@ install_configs() {
 
         mkdir -p "$dest"
         local entries=("$folder_path"/*)
-        if (( ${#entries[@]} > 0 )); then
-            \cp -rf "$folder_path/"* "$dest/"
-        fi
+        local entry
+        for entry in "${entries[@]}"; do
+            if [[ "$target_name" == hyprmono && "$(basename "$entry")" == caelestia ]]; then
+                continue
+            fi
+            \cp -rf "$entry" "$dest/"
+        done
 
         if [[ -n "$preserved_custom" ]]; then
             mkdir -p "$dest/custom"
@@ -1047,7 +1069,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     if [[ "$SKIP_PKGS" -eq 1 ]]; then
         info "Skipping system package check (--skip-pkgs/--skip-deps)."
     else
-        install_packages
+        install_packages || exit 1
     fi
 
     install_aur_packages

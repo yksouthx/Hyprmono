@@ -33,6 +33,9 @@ Notable changes to HyprMono are documented here.
 
 ### Changed
 
+- Map the reorganized Hyprland and Quickshell source directories to their
+  conventional config destinations, deploy Caelestia separately, and stop if
+  required package installation fails.
 - Read bar RAM and load metrics asynchronously from `/proc` instead of spawning
   a recurring shell process.
 - Group repository-owned Hyprland and Quickshell sources under descriptive

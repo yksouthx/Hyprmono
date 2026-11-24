@@ -20,7 +20,7 @@ for component in fish waybar rofi dunst fuzzel wofi swaync wlogout swaylock kde-
         exit 1
     fi
 done
-[[ ! -e "$REPO_ROOT/config/hyprland/hyprpaper.conf" ]]
+[[ ! -e "$REPO_ROOT/config/Hyprland/hypr/hyprpaper.conf" ]]
 
 run_profile() {
     local profile="$1"
@@ -47,6 +47,7 @@ grep -q 'Dry run: would install missing packages:' "$TEMP_DIR/minimal.out"
 grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy hypr to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy hyprmono to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
+grep -q "Dry run: would deploy caelestia to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(waybar|rofi|dunst|fuzzel|wofi|swaync|wlogout|swaylock|hyprpaper|network-manager-applet)' "$TEMP_DIR/minimal.out"
 
 run_profile standard
@@ -86,7 +87,39 @@ HOME="$TEMP_DIR/home" \
 [[ -x "$TEMP_DIR/home/.local/bin/profile.sh" ]]
 [[ -f "$TEMP_DIR/home/.config/hypr/hyprland.lua" ]]
 [[ -f "$TEMP_DIR/home/.config/hyprmono/shell.qml" ]]
+[[ -f "$TEMP_DIR/home/.config/caelestia/shell.json" ]]
+[[ ! -e "$TEMP_DIR/home/.config/hyprmono/caelestia" ]]
 grep -q 'personal override' "$TEMP_DIR/home/.config/hypr/custom/user.lua"
+
+mkdir -p "$TEMP_DIR/failure-home" "$TEMP_DIR/bin"
+cat > "$TEMP_DIR/bin/pacman" <<'EOF'
+#!/usr/bin/env bash
+[[ "$1" == "-Qi" ]] && exit 1
+[[ "$1" == "-S" ]] && exit 1
+exit 2
+EOF
+cat > "$TEMP_DIR/bin/sudo" <<'EOF'
+#!/usr/bin/env bash
+case "$1" in
+    -n) exit 1 ;;
+    -v) exit 0 ;;
+    *) shift; exec "$@" ;;
+esac
+EOF
+chmod +x "$TEMP_DIR/bin/pacman" "$TEMP_DIR/bin/sudo"
+if HOME="$TEMP_DIR/failure-home" \
+    XDG_CONFIG_HOME="$TEMP_DIR/failure-home/.config" \
+    XDG_CACHE_HOME="$TEMP_DIR/failure-home/.cache" \
+    PATH="$TEMP_DIR/bin:$PATH" \
+    TERM=xterm \
+    "$REPO_ROOT/install.sh" \
+    --terminal --no-cleanup --no-migrate --yes > "$TEMP_DIR/package-failure.out" 2>&1; then
+    printf 'Installer continued after pacman failed to install required packages.\n' >&2
+    exit 1
+fi
+grep -q 'Pacman failed to install some packages' "$TEMP_DIR/package-failure.out"
+! grep -q 'Installation Complete' "$TEMP_DIR/package-failure.out"
+[[ ! -e "$TEMP_DIR/failure-home/.config/hypr/hyprland.lua" ]]
 
 cat > "$TEMP_DIR/bin/uname" <<'EOF'
 #!/usr/bin/env bash

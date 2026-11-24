@@ -86,13 +86,13 @@ config directories. The installer creates a timestamped backup before wiping.
 
 - **NVIDIA Users:** Ensure you have the latest proprietary drivers (`nvidia` or `nvidia-open-dkms`) and have enabled DRM kernel mode setting.
 - **Laptops:** Battery and brightness controls are available from the Caelestia fallback; the project-owned quick settings currently provides audio output control.
-- **Multi-Monitor:** Hyprland handles multi-monitor setups natively; add a monitor rule in `config/hyprland/hyprland.lua` to customize your layout.
+- **Multi-Monitor:** Hyprland handles multi-monitor setups natively; add a monitor rule in `config/Hyprland/hypr/hyprland.lua` to customize your layout.
 
 ## Quickshell bar and Caelestia fallback
 
 HyprMono's bar and media UI sources are implemented in `config/quickshell/`
-and installed to `~/.config/hyprmono/`. The
-Caelestia shell remains configured in `config/caelestia/shell.json` and is
-started as a fallback if the project-owned Quickshell entry point is
+and installed to `~/.config/hyprmono/`. The Caelestia configuration source is
+`config/quickshell/caelestia/shell.json` and is installed to `~/.config/caelestia/`.
+Caelestia starts as a fallback if the project-owned Quickshell entry point is
 unavailable. The startup hook remains guarded so the compositor can still
 start if neither shell is installed.

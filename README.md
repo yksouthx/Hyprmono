@@ -123,7 +123,7 @@ fonts, and runtime assets; HyprMono only keeps the local integration config
 and wallpaper. Use `--skip-aur` to omit this step.
 
 Repository configuration is grouped by application: Hyprland sources are in
-`config/hyprland/` and Quickshell sources are in `config/quickshell/`. The
+`config/Hyprland/hypr/` and Quickshell sources are in `config/quickshell/`. The
 installer maps these to the conventional runtime directories
 `~/.config/hypr/` and `~/.config/hyprmono/`.
 
