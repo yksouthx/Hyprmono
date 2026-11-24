@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+if (( $# < 1 )); then
+    printf 'Usage: run-installer-terminal INSTALLER [ARG ...]\n' >&2
+    exit 2
+fi
+
+installer="$1"
+shift
+
+if [[ ! -f "$installer" ]]; then
+    printf 'Installer script not found: %s\n' "$installer" >&2
+    exit 1
+fi
+
+if command -v kitty >/dev/null 2>&1; then
+    exec kitty -- bash "$installer" "$@"
+elif command -v foot >/dev/null 2>&1; then
+    exec foot -e bash "$installer" "$@"
+elif command -v alacritty >/dev/null 2>&1; then
+    exec alacritty -e bash "$installer" "$@"
+elif command -v xterm >/dev/null 2>&1; then
+    exec xterm -e bash "$installer" "$@"
+fi
+
+printf 'No supported terminal emulator found (kitty, foot, alacritty, or xterm).\n' >&2
+exit 127

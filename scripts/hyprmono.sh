@@ -69,6 +69,11 @@ show_help() {
     echo -e "  uninstall   Completely remove all configurations"
     echo -e "  update      Pull latest repository changes and sync"
     echo -e "  audit       Verify system dependencies"
+    echo -e "  migrate     Scan duplicate shell components; --rollback DIR restores backups"
+    echo -e "  profile     Show or switch between low-resource, balanced, and full-visual modes"
+    echo -e "  settings    Open the HyprMono performance settings window"
+    echo -e "  performance Measure Hyprland and Quickshell CPU/RAM; compare a baseline"
+    echo -e "  emoji       Open the Quickshell emoji picker"
     echo -e "  help        Display this help interface"
     echo
 }
@@ -101,7 +106,7 @@ case "${1:-help}" in
     audit)
         log "Running System Audit..."
         missing=()
-        for bin in hyprland hyprpaper hypridle kitty fuzzel swaync; do
+        for bin in hyprland hypridle kitty; do
             if ! command -v "$bin" &> /dev/null; then
                 missing+=("$bin")
             fi
@@ -114,6 +119,45 @@ case "${1:-help}" in
         else
             err "Audit failed: Missing components: ${missing[*]}"
         fi
+        ;;
+    migrate)
+        run_repo_script migrate.sh "${@:2}"
+        ;;
+    profile)
+        run_repo_script profile.sh "${@:2}"
+        ;;
+    settings)
+        settings_file="${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/Settings.qml"
+        if [[ ! -r "$settings_file" ]]; then
+            err "Settings window is not installed at $settings_file. Run hyprmono install first."
+            exit 1
+        fi
+        if command -v quickshell >/dev/null 2>&1; then
+            quickshell -n -p "$settings_file"
+        elif command -v qs >/dev/null 2>&1; then
+            qs -n -p "$settings_file"
+        else
+            err "Quickshell is required to open settings."
+            exit 1
+        fi
+        ;;
+    emoji)
+        emoji_file="${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/EmojiPicker.qml"
+        if [[ ! -r "$emoji_file" ]]; then
+            err "Emoji picker is not installed at $emoji_file. Run hyprmono install first."
+            exit 1
+        fi
+        if command -v quickshell >/dev/null 2>&1; then
+            quickshell -n -p "$emoji_file"
+        elif command -v qs >/dev/null 2>&1; then
+            qs -n -p "$emoji_file"
+        else
+            err "Quickshell is required to open the emoji picker."
+            exit 1
+        fi
+        ;;
+    performance)
+        run_repo_script performance.sh "${@:2}"
         ;;
     help|--help|-h)
         show_help

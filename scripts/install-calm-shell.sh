@@ -10,7 +10,12 @@ readonly INSTALL_PREFIX="${CALM_SHELL_INSTALL_PREFIX:-$HOME/.local}"
 log() { printf '[calm-shell] %s\n' "$*"; }
 err() { printf '[calm-shell] error: %s\n' "$*" >&2; }
 
-for command in git cmake; do
+if [[ "$SOURCE_DIR" == "/" || "$SOURCE_DIR" == "$HOME" ]]; then
+    err "Refusing unsafe Calm-shell source directory: $SOURCE_DIR"
+    exit 1
+fi
+
+for command in git cmake ninja; do
     if ! command -v "$command" >/dev/null 2>&1; then
         err "'$command' is required. Install the build prerequisites, then rerun this script."
         exit 1
@@ -21,9 +26,12 @@ mkdir -p "$(dirname "$SOURCE_DIR")"
 if [[ -d "$SOURCE_DIR/.git" ]]; then
     log "Updating $SOURCE_DIR"
     git -C "$SOURCE_DIR" pull --ff-only
+elif [[ -e "$SOURCE_DIR" || -L "$SOURCE_DIR" ]]; then
+    err "Refusing to overwrite existing non-repository path: $SOURCE_DIR"
+    err "Move it aside or set CALM_SHELL_SOURCE_DIR to an empty path, then rerun."
+    exit 1
 else
     log "Cloning $CALM_SHELL_REPO"
-    rm -rf "$SOURCE_DIR"
     git clone "$CALM_SHELL_REPO" "$SOURCE_DIR"
 fi
 

@@ -6,11 +6,12 @@
 set -Eeuo pipefail
 
 # --- Configuration ---
-CONFIG_DIR="$HOME/.config"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 LOCAL_BIN="$HOME/.local/bin"
-TARGETS=(hypr kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors caelestia calm-shell)
-INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh)
+TARGETS=(hypr hyprmono kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors caelestia calm-shell)
+INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh uninstall.sh)
 BACKUP_PREFIX=".config-backup-"
+LOG_FILE="$HOME/.cache/Hyprmono/uninstall.log"
 # install.sh records the very first backup (the user's original configs) here.
 ORIGINAL_BACKUP_FILE="$HOME/.cache/Hyprmono/original-backup"
 
@@ -23,7 +24,11 @@ BOLD="\e[1m"
 RESET="\e[0m"
 
 # --- Helpers ---
-log() { printf '%b> %s%b\n' "${CYAN}" "$*" "${RESET}"; }
+log() {
+    printf '%b> %s%b\n' "${CYAN}" "$*" "${RESET}"
+    mkdir -p "$(dirname "$LOG_FILE")"
+    printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG_FILE"
+}
 ok() { printf '%b✓%b %s\n' "${GREEN}" "${RESET}" "$*"; }
 warn() { printf '%b!%b %s\n' "${YELLOW}" "${RESET}" "$*"; }
 err() { printf '%b✗%b %s\n' "${RED}" "${RESET}" "$*" >&2; }
@@ -46,7 +51,8 @@ confirm() {
 remove_configs() {
     log "Removing HyprMono configurations..."
     for target in "${TARGETS[@]}"; do
-        if [[ -d "$CONFIG_DIR/$target" ]]; then
+        if [[ -e "$CONFIG_DIR/$target" || -L "$CONFIG_DIR/$target" ]]; then
+            log "Removing $CONFIG_DIR/$target"
             rm -rf -- "${CONFIG_DIR:?}/$target"
             ok "Removed $CONFIG_DIR/$target"
         fi
@@ -57,6 +63,7 @@ remove_installed_scripts() {
     log "Removing installed HyprMono scripts..."
     for script in "${INSTALLED_SCRIPTS[@]}"; do
         if [[ -e "$LOCAL_BIN/$script" || -L "$LOCAL_BIN/$script" ]]; then
+            log "Removing $LOCAL_BIN/$script"
             rm -f -- "$LOCAL_BIN/$script"
             ok "Removed $LOCAL_BIN/$script"
         fi
@@ -84,11 +91,27 @@ restore_latest_backup() {
         confirm "Restore this backup?"
 
         for target in "${TARGETS[@]}"; do
-            if [[ -d "$latest_backup/$target" ]]; then
+            if [[ -e "$latest_backup/$target" || -L "$latest_backup/$target" ]]; then
                 cp -a "$latest_backup/$target" "$CONFIG_DIR/"
+                log "Restored $target from $latest_backup"
                 ok "Restored $target from backup"
             fi
         done
+        if [[ -d "$latest_backup/.local-bin" ]]; then
+            mkdir -p "$LOCAL_BIN"
+            local saved name
+            for saved in "$latest_backup/.local-bin/"*; do
+                [[ -e "$saved" || -L "$saved" ]] || continue
+                name=$(basename "$saved")
+                if [[ -e "$LOCAL_BIN/$name" || -L "$LOCAL_BIN/$name" ]]; then
+                    warn "Skipped $LOCAL_BIN/$name because it already exists."
+                    continue
+                fi
+                cp -a "$saved" "$LOCAL_BIN/"
+                log "Restored $LOCAL_BIN/$name from $latest_backup"
+                ok "Restored $LOCAL_BIN/$name from backup"
+            done
+        fi
     else
         warn "No backups found to restore."
     fi

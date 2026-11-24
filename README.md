@@ -26,9 +26,25 @@
 
 ## Contents
 
-HyprMono is built on the principle of **visual silence**. By stripping away color, the interface becomes a neutral canvas that prioritizes content and focus. Every component—from the status bar to the notification daemon—has been meticulously audited and modularized to ensure a perfect grayscale aesthetic.
+HyprMono pairs a current Lua-configured Hyprland setup with the Caelestia
+Quickshell shell. Quickshell provides the bar, launcher, dock, widgets, quick
+settings, notifications, media controls, system information and wallpaper
+controls in one integrated UI. Caelestia is an upstream dependency; this
+repository configures and launches it rather than copying or forking its QML.
 
-With the latest update, HyprMono now supports **dynamic monochrome theming** via **Wallbash**, allowing your environment to subtly adapt to your chosen wallpaper while maintaining its lethal monochrome identity.
+Caelestia is the sole bar, launcher, notification center, quick settings and
+session menu. HyprMono configures its existing workspaces, task list, clock,
+tray, audio/network/battery status, media, performance dashboard, fuzzy app
+search and notification timing through the documented `shell.json`. It does
+not deploy competing Waybar, Rofi, Dunst, Fuzzel, Wofi, SwayNC or Wlogout
+configs/packages. The standard profile adds Fastfetch, extended also adds
+Yazi, and custom asks about each optional app. A small on-demand Quickshell emoji
+picker is available with `Super + Shift + E` or `hyprmono emoji`; it uses
+`wl-clipboard` to copy selections.
+`--full-ui` remains an alias for extended. Hyprland also has selectable compositor profiles:
+`low-resource` disables blur, shadows and animations; `balanced` uses reduced
+blur and shadows with animations enabled; `full-visual` keeps the default
+visual effects.
 
 ---
 
@@ -40,55 +56,71 @@ With the latest update, HyprMono now supports **dynamic monochrome theming** via
 | **Caelestia shell** | Lightweight Quickshell desktop shell and status UI. |
 | **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme. |
-| **Fuzzel** | Lightweight application launcher and emoji picker. |
-| **SwayNC** | Notification daemon for the default profile. |
-| **Hyprpaper** | A lightweight wallpaper daemon for Hyprland. |
-| **Waybar / Wofi / Rofi** | Optional full-UI components, not installed by the lightweight default. |
+| **Caelestia / Quickshell** | The single integrated bar, app launcher, notification center, quick settings, media and session UI. |
 | **Calm-shell** | Preferred terminal shell, built from `yksouthx/calm-shell`. |
 
 ---
 
 ## ◈ Installation
 
-### 1. Requirements
-Ensure you have the following core packages installed (Arch Linux / Pacman):
+Clone the repository and run the installer:
 
 ```bash
-sudo pacman -S --needed \
-    hyprland hypridle hyprlock kitty fuzzel \
-    xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent \
-    ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
-    network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse \
-    swaynotificationcenter
-```
-
-### 2. Setup
-Clone the repository and run the automated installer:
-
-```bash
-mkdir -p ~/.local/share
-cd ~/.local/share
 git clone https://github.com/yksouthx/Hyprmono.git
 cd Hyprmono
-bash scripts/install.sh
+./install.sh
 ```
 
-The installer will:
-1. Check for required and optional dependencies.
-2. Deploy configurations to `~/.config/`.
-3. Back up existing managed directories to `~/.config-backup-<timestamp>/`.
-4. Use the lightweight profile by default; pass `--full-ui` to install optional Waybar/Wofi/Rofi and utility packages.
-5. Detect `paru` or `yay` and use it to install the official `caelestia-cli` and `caelestia-shell` AUR packages.
+The installer checks the distribution and available hardware, scans known
+duplicate shell configs under `~/.config`, `~/.local/share` and
+`~/.local/bin`, and checks installed packages for reverse dependencies. It
+shows each candidate and asks separately before removing it. Selected files
+are backed up under `~/.local/state/Hyprmono/migration-backups/`; packages are
+never removed without an explicit per-package approval. Shared packages are
+preserved. `--yes` does not approve cleanup.
 
-To remove stale files from previous HyprMono deployments, use the explicit wipe mode. Existing managed directories are backed up before they are removed:
+When launched without arguments in a Wayland session, the installer opens a
+wallpaper-centered Quickshell/QML window with an animated progress line when
+Quickshell and a supported terminal are available. Detailed logs and cleanup
+approvals run in that terminal. Otherwise the installer falls back to the
+terminal interface; `--terminal` selects it explicitly. The QML is interpreted
+directly and requires no build step.
+
+Use `--profile minimal|standard|extended|custom` to choose an installation
+profile. The `custom` profile asks separately about each optional package and
+configuration, defaulting to keeping each optional component out unless
+selected. Use `--no-cleanup` to skip migration scanning, and `--skip-deps` to
+avoid package installation.
+`--rollback <backup-directory>` restores a migration backup and exits; combine
+it with `--dry-run` to preview restoration.
+
+Before installing, preview the scan and deployment plan without changing
+packages or configuration:
+
+```bash
+./install.sh --dry-run
+```
+
+Existing managed configs are backed up to `~/.config-backup-<timestamp>/`
+before deployment. The minimal profile is the default. Standard adds Fastfetch; `--full-ui`
+selects extended and also adds Yazi. No profile installs duplicate bar,
+launcher or notification components.
+
+To remove stale files from previous HyprMono deployments, use the explicit
+wipe mode. Existing managed directories are backed up before they are removed:
 
 ```bash
 bash scripts/install.sh --wipe
 ```
 
-Calm-shell is built from [yksouthx/calm-shell](https://github.com/yksouthx/calm-shell) and installed to `~/.local/bin/calm`. The Hyprland terminal launcher prefers it and falls back to Kitty if it is unavailable.
+Calm-shell is built from [yksouthx/calm-shell](https://github.com/yksouthx/calm-shell) and installed to `~/.local/bin/calm`. The Hyprland terminal launcher uses it by default and falls back to Kitty if it is unavailable.
 
-When `paru` or `yay` is available, the installer installs the official [Caelestia CLI](https://aur.archlinux.org/packages/caelestia-cli) and [Caelestia shell](https://aur.archlinux.org/packages/caelestia-shell) packages. The shell package supplies the upstream QML, icons, animations, fonts, and runtime assets; HyprMono only keeps the local integration config and wallpaper. Use `--skip-aur` to omit this step.
+When `paru` or `yay` is available, the installer offers the official
+[Caelestia CLI](https://aur.archlinux.org/packages/caelestia-cli) and
+[Caelestia shell](https://aur.archlinux.org/packages/caelestia-shell)
+packages. The shell package supplies the upstream QML, icons, animations,
+fonts, and runtime assets; HyprMono only keeps the local integration config
+and wallpaper. Use `--skip-aur` to omit this step.
 
 HyprMono follows the current Hyprland Lua configuration API. The installed entrypoint is
 `~/.config/hypr/hyprland.lua`; the monochrome palette lives in
@@ -97,6 +129,43 @@ HyprMono follows the current Hyprland Lua configuration API. The installed entry
 the legacy native `.conf` syntax with the current official wiki format.
 
 ---
+
+## ◈ Profiles, Migration & Recovery
+
+Switch the Hyprland compositor between visual modes:
+
+```bash
+hyprmono profile low-resource
+hyprmono profile balanced
+hyprmono profile full-visual
+hyprmono profile show
+```
+
+Open the graphical performance settings window with `Super + I` or
+`hyprmono settings`. The current window manages compositor performance
+profiles; advanced Hyprland configuration remains editable in
+`~/.config/hypr/custom/`.
+
+Review shell components that can be replaced by Quickshell without running
+the installer:
+
+```bash
+hyprmono migrate --dry-run
+hyprmono migrate
+```
+
+The migration command asks before each removal and never removes packages
+needed by another installed package. It logs operations to
+`~/.cache/Hyprmono/migration.log`. To restore a migration backup, use the exact
+path printed at the end of the run:
+
+```bash
+hyprmono migrate --rollback ~/.local/state/Hyprmono/migration-backups/<timestamp>
+```
+
+Rollback restores files only when their original path is still absent; it
+asks again before reinstalling packages. The installer does not uninstall
+system packages during normal removal.
 
 ## ◈ Management CLI
 
@@ -112,6 +181,10 @@ Available commands:
 - `uninstall`: Remove all HyprMono configurations.
 - `update`: Pull latest changes and sync configurations.
 - `audit`: Perform a system check for dependencies.
+- `migrate`: Review duplicate shell components and restore migration backups.
+- `profile`: Switch `low-resource` / `balanced` / `full-visual` compositor modes.
+- `settings`: Open the graphical performance settings window.
+- `emoji`: Open the Quickshell emoji picker.
 
 
 ---
@@ -125,13 +198,18 @@ Available commands:
 │   ├── sounds/
 │   └── wall.webp
 ├── config/
+│   ├── installer/
+│   ├── hyprmono/
 │   ├── hypr/
 │   ├── caelestia/
 │   ├── calm-shell/
 │   └── ...
 ├── scripts/
-│   ├── change_wallpaper.sh
 │   ├── hyprmono.sh
+│   ├── migrate.sh
+│   ├── performance.sh
+│   ├── profile.sh
+│   ├── run-installer-terminal
 │   └── install.sh
 └── (installer links scripts/hyprmono.sh to ~/.local/bin/hyprmono)
 ```

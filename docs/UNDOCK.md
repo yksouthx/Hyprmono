@@ -6,6 +6,10 @@ This document serves as the definitive, high-fidelity audit log of the **HyprMon
 **Date of Transformation:** June 2026  
 **Target Repository:** `s0uth09/Hyprmono`
 
+> Historical transformation notes. The Waybar, launcher, notification and
+> logout-menu configs described below have since been replaced by the
+> documented Caelestia shell configuration in `config/caelestia/shell.json`.
+
 ---
 
 ## ◈ Phase 1: Deep Audit & Modularization

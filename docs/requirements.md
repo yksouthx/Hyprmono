@@ -36,28 +36,40 @@ The installation script (`install.sh`) will attempt to install these automatical
 - `hyprland`: The tiling compositor.
 - `caelestia shell`: Lightweight desktop shell and status UI, installed separately.
 - `kitty`: Terminal emulator.
-- `fuzzel`: Lightweight application launcher.
-- `swaynotificationcenter`: Notification daemon.
-- `hyprpaper`: Wallpaper utility.
 - `hyprlock`: Screen locker.
 - `hypridle`: Idle management daemon.
 - `calm-shell`: Preferred interactive terminal shell, built by the installer from `https://github.com/yksouthx/calm-shell.git`.
 
-### AUR packages
+### Caelestia and optional packages
 
-If `paru` or `yay` is installed, the installer uses it for `caelestia-cli` and `caelestia-shell`. The official shell package supplies Caelestia's QML, icons, animations, fonts, and runtime assets. Pass `--skip-aur` to skip AUR installation.
+If `paru` or `yay` is installed, the installer offers `caelestia-cli` and
+`caelestia-shell`. The official shell package supplies Caelestia's QML, icons,
+animations, fonts and runtime assets. Pass `--skip-aur` to skip AUR setup.
+Caelestia replaces the separate bar, launcher, notification center and session
+menu; HyprMono no longer deploys Waybar, Rofi, Dunst, Fuzzel, Wofi, SwayNC or
+Wlogout configs/packages.
 
-Waybar, Wofi, Rofi, Dunst, Swaylock, Fish, and Fastfetch are optional full-UI packages. Pass `--full-ui` to the installer when those components are wanted; the default profile avoids installing or autostarting duplicate desktop-shell components.
+Fastfetch and Yazi are optional: minimal installs neither, standard adds
+Fastfetch, extended adds both, and custom asks about each independently.
+Calm-shell is the default terminal shell, built and installed by the installer;
+Fish is not part of the project configuration.
+`--full-ui` aliases extended.
 
 ### Utilities & Drivers
 - `pipewire` / `wireplumber`: Audio backend.
 - `brightnessctl` / `playerctl`: Hardware controls.
-- `network-manager-applet`: Network tray icon.
 - `polkit-kde-agent`: Authentication agent.
 - `xdg-desktop-portal-hyprland`: Wayland portal.
 - `cmake`, `ninja`, `gcc`, and `git`: Build and source prerequisites for Calm-shell.
 
-Use `install.sh --wipe` to remove stale files from previous HyprMono-managed config directories. The installer creates a timestamped backup before wiping.
+Use `./install.sh --dry-run` to preview the system scan and deployment plan.
+The installer asks before removing each recognized component and backs up
+selected files. Shared packages are preserved; package removal always
+requires explicit approval. Use `hyprmono migrate --rollback <backup-directory>`
+to restore a migration backup.
+
+Use `./install.sh --wipe` to remove stale files from previous HyprMono-managed
+config directories. The installer creates a timestamped backup before wiping.
 
 ### Fonts
 - `ttf-jetbrains-mono-nerd`
@@ -70,9 +82,14 @@ Use `install.sh --wipe` to remove stale files from previous HyprMono-managed con
 ## ◈ Hardware Compatibility Notes
 
 - **NVIDIA Users:** Ensure you have the latest proprietary drivers (`nvidia` or `nvidia-open-dkms`) and have enabled DRM kernel mode setting.
-- **Laptops:** Battery and backlight modules in Waybar are pre-configured but may require specific `sysfs` paths depending on your hardware.
-- **Multi-Monitor:** Hyprland handles multi-monitor setups natively; check `config/hypr/hyprland/monitors.conf` to customize your layout.
+- **Laptops:** Caelestia provides battery and brightness controls; brightness availability depends on the device and system permissions.
+- **Multi-Monitor:** Hyprland handles multi-monitor setups natively; add a monitor rule in `config/hypr/hyprland.lua` to customize your layout.
 
-## Optional Caelestia shell
+## Caelestia shell
 
-HyprMono includes a guarded startup hook for the [Caelestia shell](https://github.com/caelestia-dots/shell). Install the shell and its CLI using the official Arch/AUR or manual instructions. When `caelestia` is available, Hyprland starts it with `caelestia shell -d`; otherwise the hook exits quietly and the regular HyprMono desktop continues to start.
+HyprMono configures the [Caelestia shell](https://github.com/caelestia-dots/shell)
+in `config/caelestia/shell.json`. Its built-in bar, launcher, notifications,
+dashboard, sidebar, wallpaper manager and session UI replace the former
+standalone components.
+The startup hook remains guarded, so the compositor can still start if
+Caelestia has not yet been installed.

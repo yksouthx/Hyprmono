@@ -6,6 +6,19 @@
 
 local colours = require("./modules/colours")
 
+local profile = "full-visual"
+local config_home = os.getenv("XDG_CONFIG_HOME") or ((os.getenv("HOME") or "") .. "/.config")
+local profile_file = io.open(config_home .. "/hypr/profile", "r")
+if profile_file then
+    local configured_profile = profile_file:read("*l")
+    profile_file:close()
+    if configured_profile == "low-resource" or configured_profile == "balanced" then
+        profile = configured_profile
+    end
+end
+local low_resource = profile == "low-resource"
+local balanced = profile == "balanced"
+
 ------------------
 ---- MONITORS ----
 ------------------
@@ -68,7 +81,7 @@ hl.config({
     },
 
     decoration = {
-        rounding = 18,
+        rounding = low_resource and 8 or (balanced and 12 or 18),
         rounding_power = 2.5,
         active_opacity = 1.0,
         inactive_opacity = 0.92,
@@ -76,12 +89,12 @@ hl.config({
         dim_strength = 0.05,
         dim_special = 0.2,
         blur = {
-            enabled = true,
+            enabled = not low_resource,
             xray = true,
             special = false,
             new_optimizations = true,
-            size = 10,
-            passes = 3,
+            size = low_resource and 4 or (balanced and 6 or 10),
+            passes = low_resource and 1 or (balanced and 2 or 3),
             brightness = 1.0,
             noise = 0.05,
             contrast = 0.89,
@@ -91,17 +104,15 @@ hl.config({
             popups_ignorealpha = 0.6,
         },
         shadow = {
-            enabled = true,
-            range = 20,
+            enabled = not low_resource,
+            range = balanced and 14 or 20,
             offset = "0 2",
             render_power = 4,
             color = "rgba(00000020)",
         },
     },
 
-    animations = {
-        enabled = true,
-    },
+    animations = { enabled = not low_resource },
 
     dwindle = {
         preserve_split = true,
@@ -177,21 +188,21 @@ hl.curve("menuDecel", { type = "bezier", points = {{0.10, 1.00}, {0.00, 1.00}} }
 hl.curve("menuAccel", { type = "bezier", points = {{0.52, 0.03}, {0.72, 0.08}} })
 hl.curve("stall", { type = "bezier", points = {{1.00, -0.10}, {0.70, 0.85}} })
 
-hl.animation({ leaf = "windows", enabled = true, speed = 3, bezier = "emphasizedDecel" })
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 3, bezier = "emphasizedDecel", style = "popin 80%" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 2, bezier = "emphasizedDecel", style = "popin 90%" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 3, bezier = "emphasizedDecel", style = "slide" })
-hl.animation({ leaf = "fadeIn", enabled = true, speed = 3, bezier = "emphasizedDecel" })
-hl.animation({ leaf = "fadeOut", enabled = true, speed = 2, bezier = "emphasizedDecel" })
-hl.animation({ leaf = "border", enabled = true, speed = 10, bezier = "emphasizedDecel" })
-hl.animation({ leaf = "layersIn", enabled = true, speed = 2.7, bezier = "emphasizedDecel", style = "popin 93%" })
-hl.animation({ leaf = "layersOut", enabled = true, speed = 2.4, bezier = "menuAccel", style = "popin 94%" })
-hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 0.5, bezier = "menuDecel" })
-hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 2.7, bezier = "stall" })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 7, bezier = "menuDecel", style = "slide" })
-hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 2.8, bezier = "emphasizedDecel", style = "slidevert" })
-hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 1.2, bezier = "emphasizedAccel", style = "slidevert" })
-hl.animation({ leaf = "zoomFactor", enabled = true, speed = 3, bezier = "standardDecel" })
+hl.animation({ leaf = "windows", enabled = not low_resource, speed = 3, bezier = "emphasizedDecel" })
+hl.animation({ leaf = "windowsIn", enabled = not low_resource, speed = 3, bezier = "emphasizedDecel", style = "popin 80%" })
+hl.animation({ leaf = "windowsOut", enabled = not low_resource, speed = 2, bezier = "emphasizedDecel", style = "popin 90%" })
+hl.animation({ leaf = "windowsMove", enabled = not low_resource, speed = 3, bezier = "emphasizedDecel", style = "slide" })
+hl.animation({ leaf = "fadeIn", enabled = not low_resource, speed = 3, bezier = "emphasizedDecel" })
+hl.animation({ leaf = "fadeOut", enabled = not low_resource, speed = 2, bezier = "emphasizedDecel" })
+hl.animation({ leaf = "border", enabled = not low_resource, speed = 10, bezier = "emphasizedDecel" })
+hl.animation({ leaf = "layersIn", enabled = not low_resource, speed = 2.7, bezier = "emphasizedDecel", style = "popin 93%" })
+hl.animation({ leaf = "layersOut", enabled = not low_resource, speed = 2.4, bezier = "menuAccel", style = "popin 94%" })
+hl.animation({ leaf = "fadeLayersIn", enabled = not low_resource, speed = 0.5, bezier = "menuDecel" })
+hl.animation({ leaf = "fadeLayersOut", enabled = not low_resource, speed = 2.7, bezier = "stall" })
+hl.animation({ leaf = "workspaces", enabled = not low_resource, speed = 7, bezier = "menuDecel", style = "slide" })
+hl.animation({ leaf = "specialWorkspaceIn", enabled = not low_resource, speed = 2.8, bezier = "emphasizedDecel", style = "slidevert" })
+hl.animation({ leaf = "specialWorkspaceOut", enabled = not low_resource, speed = 1.2, bezier = "emphasizedAccel", style = "slidevert" })
+hl.animation({ leaf = "zoomFactor", enabled = not low_resource, speed = 3, bezier = "standardDecel" })
 
 ----------------
 ---- GESTURES ----
@@ -207,8 +218,6 @@ hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
 ---------------------
 
 hl.on("hyprland.start", function()
-    hl.exec_cmd("nm-applet --indicator")
-    hl.exec_cmd("hyprpaper")
     -- Caelestia owns idle + lock; this only starts hypridle when Caelestia is missing.
     hl.exec_cmd("$HOME/.local/bin/start-idle.sh")
     hl.exec_cmd("$HOME/.local/bin/start-caelestia.sh")
@@ -219,11 +228,9 @@ end)
 ---------------------
 
 local terminal = "$HOME/.local/bin/launch_terminal.sh"
-local file_manager = "$HOME/.local/bin/launch_first_available.sh 'nautilus' 'nemo' 'thunar' 'kitty -1 fish -c yazi'"
+local file_manager = "$HOME/.local/bin/launch_first_available.sh 'nautilus' 'nemo' 'thunar' 'kitty -1 yazi'"
 local browser = "$HOME/.local/bin/launch_first_available.sh 'google-chrome-stable' 'zen-browser' 'firefox' 'brave' 'chromium' 'microsoft-edge-stable' 'opera' 'librewolf'"
 local text_editor = "$HOME/.local/bin/launch_first_available.sh 'kate' 'gnome-text-editor' 'emacs'"
-local menu = "fuzzel --show drun"
-
 ---------------------
 ---- KEYBINDINGS ----
 ---------------------
@@ -232,8 +239,11 @@ local main_mod = "SUPER"
 hl.bind(main_mod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(main_mod .. " + E", hl.dsp.exec_cmd(file_manager))
 hl.bind(main_mod .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(main_mod .. " + R", hl.dsp.exec_cmd(menu))
+hl.bind(main_mod .. " + R", hl.dsp.global("caelestia:launcher"))
 hl.bind(main_mod .. " + T", hl.dsp.exec_cmd(text_editor))
+hl.bind(main_mod .. " + I", hl.dsp.exec_cmd(
+    "quickshell -n -p " .. string.format("%q", config_home .. "/hyprmono/Settings.qml")))
+hl.bind(main_mod .. " + SHIFT + E", hl.dsp.exec_cmd("hyprmono emoji"))
 hl.bind("ALT + F4", hl.dsp.window.close())
 hl.bind(main_mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(main_mod .. " + P", hl.dsp.window.pseudo())

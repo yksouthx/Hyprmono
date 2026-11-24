@@ -7,7 +7,7 @@
 </div>
 
 <p align="center">
-  <img src="../assets/wallpapers/dark_fantasy_city.jpg" width="800" alt="Dark Fantasy Monochrome Preview" />
+  <img src="../assets/wall.webp" width="800" alt="Dark Fantasy Monochrome Preview" />
 </p>
 
 ---
@@ -26,7 +26,14 @@
 
 ## ◈ Design Philosophy
 
-HyprMono is built on the principle of **visual silence**. By stripping away color, the interface becomes a neutral canvas that prioritizes content and focus. Every component—from the status bar to the notification daemon—has been meticulously audited and modularized to ensure a perfect grayscale aesthetic.
+HyprMono pairs a current Lua-configured Hyprland setup with the upstream
+Caelestia Quickshell shell. Caelestia is the sole bar, launcher, notification
+center, quick settings and session menu. HyprMono configures its workspaces,
+task list, clock, tray, audio/network/battery indicators, media and performance
+dashboard through the documented `shell.json`; it does not deploy competing
+Waybar, Rofi, Dunst, Fuzzel, Wofi, SwayNC or Wlogout configs/packages.
+Standard adds Fastfetch, extended also adds Yazi, and custom asks about each
+optional app. `--full-ui` aliases extended.
 
 ---
 
@@ -35,55 +42,47 @@ HyprMono is built on the principle of **visual silence**. By stripping away colo
 | Component | Description |
 | :--- | :--- |
 | **Hyprland** | Current official Lua-based tiling compositor configuration, heavily modularized. |
-| **Waybar** | Minimalist status bar with custom monochrome modules. |
+| **Caelestia / Quickshell** | Integrated bar, launcher, widgets, notifications, quick settings, wallpaper controls and session UI. |
 | **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme and Nothing OS font. |
-| **Wofi / Rofi** | Unified application launchers and window switchers. |
-| **Dunst / SwayNC** | Ported notification systems for seamless visual integration. |
-| **Fuzzel** | Compact launcher with an integrated monochrome emoji picker. |
+| **Calm-shell** | Default interactive shell launched inside Kitty. |
 | **Vim** | Monochrome color scheme for the Vim text editor. |
-| **Fish** | Clean and functional shell configuration. |
 | **Fastfetch** | System information tool with monochrome output. |
-| **Wlogout** | Monochrome logout menu. |
+| **Yazi** | Optional terminal file manager for the extended profile. |
 
 ---
 
 ## ◈ Installation
 
-### 1. Requirements
-Before installing, please review the [System Requirements](requirements.md) to ensure your hardware is compatible. Ensure you have the following packages installed (Arch Linux / Pacman):
+### Installation
+Review the [System Requirements](requirements.md), then clone and run:
 
 ```bash
-sudo pacman -S --needed \
-    hyprland hyprpaper hypridle kitty fuzzel \
-    xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent \
-    ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji \
-    network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse \
-    swaynotificationcenter
+git clone https://github.com/yksouthx/Hyprmono.git
+cd Hyprmono
+./install.sh
 ```
 
-### 2. Setup
-Clone the repository into the standard local share directory and run the automated installer:
+The installer scans known duplicate components under `~/.config`,
+`~/.local/share` and `~/.local/bin`. It lists candidates and asks before each
+removal, backs up selected files, and preserves packages with reverse
+dependencies. Preview the scan and installation plan with `./install.sh
+--dry-run`. Use `--profile minimal|standard|extended|custom` to select an
+installation. The custom profile asks separately about optional components
+and defaults each to unselected.
 
-```bash
-mkdir -p ~/.local/share
-cd ~/.local/share
-git clone https://github.com/yksouthx/Hyprmono.git hyprmono
-cd hyprmono
-bash scripts/install.sh
-```
+On Wayland, a no-argument launch opens the wallpaper-centered Quickshell/QML
+installer window when Quickshell and a supported terminal are available; it
+needs no build step. Logs and cleanup approvals are handled in the terminal.
+Otherwise the installer uses its terminal interface, which can be selected
+with `--terminal`. `--profile minimal|standard|extended|custom` selects the
+installation profile, `--no-cleanup` skips the migration scan, and `--skip-deps`
+skips package installation.
+`--rollback <backup-directory>` restores a migration backup; add `--dry-run` to
+preview the restore.
 
-Alternatively, you can use the `hyprmono` command directly after cloning:
-
-```bash
-mkdir -p ~/.local/share
-cd ~/.local/share
-git clone https://github.com/yksouthx/Hyprmono.git hyprmono
-cd hyprmono
-bash scripts/hyprmono.sh install
-```
-
-The installer uses the lightweight Caelestia profile by default, automatically handles backups, and places all files in their correct locations. Use `bash scripts/install.sh --full-ui` for optional Waybar/Wofi/Rofi and utility packages, or `bash scripts/install.sh --wipe` to remove stale managed files after creating a timestamped backup.
+Run `hyprmono migrate --dry-run` to scan separately; approved removals can be
+restored using `hyprmono migrate --rollback <backup-directory>`.
 
 ---
 
@@ -107,6 +106,10 @@ Available commands:
 - `uninstall`: Remove all HyprMono configurations.
 - `update`: Pull latest changes and sync configurations.
 - `audit`: Perform a system check for dependencies.
+- `migrate`: Review duplicate shell components and restore migration backups.
+- `profile`: Switch `low-resource` / `balanced` / `full-visual` Hyprland compositor modes.
+- `settings`: Open the graphical performance settings window.
+- `emoji`: Open the Quickshell emoji picker.
 
 ---
 
@@ -117,6 +120,8 @@ Available commands:
 | `Super + Return` | Open Terminal (Calm-shell, with Kitty fallback) |
 | `Super + B` | Launch Browser |
 | `Super + E` | Open File Manager |
+| `Super + I` | Open HyprMono Settings |
+| `Super + Shift + E` | Open the Quickshell emoji picker |
 | `Super + R` | Application Launcher |
 | `Alt + F4` | Close Active Window |
 | `Super + M` | Exit Hyprland |
@@ -139,15 +144,18 @@ To change the monochrome palette, update `modules/colours.lua` and reload Hyprla
 ### File Tree
 
 ```text
-~/.local/share/hyprmono/
+~/.local/share/Hyprmono/
 ├── assets/
 │   ├── fonts/
 │   ├── sounds/
-│   └── wallpapers/
+│   └── wall.webp
 ├── config/
-│   ├── dunst/
+│   ├── caelestia/
+│   ├── calm-shell/
 │   ├── fastfetch/
-│   ├── fish/
+│   ├── hypr/
+│   ├── hyprmono/
+│   ├── installer/
 │   ├── ...
 ├── docs/
 │   ├── CONTRIBUTING.md

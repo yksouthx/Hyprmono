@@ -21,10 +21,10 @@ SELF_NAME=$(basename "$REAL_PATH")
 
 # --- Configuration ---
 readonly PROJECT="Hyprmono"
-CONFIG_DIR="$HOME/.config"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 LOCAL_BIN="$HOME/.local/bin"
 TARGET_REPO_DIR="$HOME/.local/share/Hyprmono"
-REPO_URL="github.com/yksouthx/Hyprmono"   # <- update to your actual repo
+REPO_URL="https://github.com/yksouthx/Hyprmono"
 
 # Log location is intentionally independent of the repo path — we need
 # somewhere to write to even if repo resolution itself fails.
@@ -34,11 +34,17 @@ LOGFILE="$LOGDIR/install.log"
 
 # --- Flags (set via CLI args in main()) ---
 NO_MIGRATE=0
+NO_CLEANUP=0
+SKIP_DEPS=0
 SKIP_PKGS=0
 SKIP_AUR=0
 ASSUME_YES=0
 WIPE_CONFIGS=0
-FULL_UI=0
+INSTALL_PROFILE="minimal"
+SELECTED_OPTIONAL_PACKAGES=()
+DRY_RUN=0
+TERMINAL_MODE=0
+ROLLBACK_DIR=""
 
 # --- Colors ---
 RESET="\e[0m"
@@ -100,6 +106,30 @@ ask() {
     read -r answer
     [[ -z "$answer" ]] && answer="$default"
     [[ "$answer" =~ ^[Yy]$ ]]
+}
+
+usage() {
+    cat <<'EOF'
+Usage: ./install.sh [OPTIONS]
+
+Install HyprMono; opens the Quickshell window on supported Wayland sessions.
+
+Options:
+  --terminal          Use the terminal installer explicitly
+  --dry-run           Preview migration and deployment without changing the system
+  --profile PROFILE   Choose minimal, standard, extended, or custom
+  --minimal           Alias for --profile minimal
+  --full-ui           Alias for --profile extended
+  --no-cleanup        Skip scanning/removing existing desktop components
+  --skip-deps         Skip system and AUR dependency installation
+  --skip-pkgs         Skip system package installation
+  --skip-aur          Skip AUR package installation
+  --rollback DIR      Restore a migration backup and exit
+  --no-migrate        Do not offer to move the repository into its standard location
+  --wipe              Back up and remove existing managed configs before deployment
+  --yes               Automatically accept installer prompts (not cleanup approvals)
+  --help              Show this help
+EOF
 }
 
 # Spinner for long-running background commands.
@@ -195,20 +225,61 @@ resolve_repo_root() {
 
 # --- Package Management ---
 PACMAN_PACKAGES=(
-    git cmake ninja gcc
-    hyprland hyprlock hyprpaper hypridle kitty fuzzel
+    git
+    hyprland hyprlock hypridle kitty
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
-    network-manager-applet brightnessctl playerctl wireplumber pipewire-pulse
-    swaync
+    brightnessctl playerctl wireplumber pipewire-pulse wl-clipboard
 )
 
-OPTIONAL_UI_PACKAGES=(waybar wofi rofi wlogout swaylock dunst fish fastfetch)
+OPTIONAL_PACKAGES=(fastfetch yazi)
+CALM_BUILD_PACKAGES=(cmake ninja gcc)
 
 # The shell package carries Caelestia's upstream QML, icons, animations, and
 # fonts. Keep these in the AUR package instead of copying upstream assets into
 # HyprMono, so the shell and its resources stay version-matched.
 CAELESTIA_AUR_PACKAGES=(caelestia-cli caelestia-shell)
+
+select_profile_components() {
+    local package
+    SELECTED_OPTIONAL_PACKAGES=()
+
+    case "$INSTALL_PROFILE" in
+        minimal)
+            ;;
+        standard)
+            SELECTED_OPTIONAL_PACKAGES=(fastfetch)
+            ;;
+        extended)
+            SELECTED_OPTIONAL_PACKAGES=(fastfetch yazi)
+            ;;
+        custom)
+            for package in "${OPTIONAL_PACKAGES[@]}"; do
+                if ask "Include optional component '$package'?" n; then
+                    SELECTED_OPTIONAL_PACKAGES+=("$package")
+                fi
+            done
+            ;;
+        *)
+            err "Invalid installation profile: $INSTALL_PROFILE"
+            exit 2
+            ;;
+    esac
+
+    if (( ${#SELECTED_OPTIONAL_PACKAGES[@]} > 0 )); then
+        info "Profile '$INSTALL_PROFILE' selected optional components: ${SELECTED_OPTIONAL_PACKAGES[*]}"
+    else
+        info "Profile '$INSTALL_PROFILE' has no optional components selected."
+    fi
+}
+
+component_selected() {
+    local selected
+    for selected in "${SELECTED_OPTIONAL_PACKAGES[@]}"; do
+        [[ "$selected" == "$1" ]] && return 0
+    done
+    return 1
+}
 
 # --- Pre-flight system scan ---
 scan_system() {
@@ -221,6 +292,22 @@ scan_system() {
 
     echo
     echo -e "${BOLD}${WHITE}Environment${RESET}"
+    if [[ -r /etc/os-release ]]; then
+        . /etc/os-release
+        info "Distribution: ${PRETTY_NAME:-unknown} (${ID:-unknown})"
+    fi
+    info "Architecture: $(uname -m); logical CPUs: $(getconf _NPROCESSORS_ONLN 2>/dev/null || echo unknown)"
+    if [[ -r /proc/meminfo ]]; then
+        local memory_kib
+        memory_kib=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
+        [[ -n "$memory_kib" ]] && info "Memory: $((memory_kib / 1024)) MiB"
+    fi
+    if has lspci; then
+        info "Display adapters: $(lspci -mm 2>/dev/null | awk -F '"' '/VGA compatible controller|3D controller|Display controller/ {print $2}' | paste -sd ', ' -)"
+    else
+        info "Display adapter details unavailable (install pciutils for lspci)."
+    fi
+
     if has pacman; then ok "Arch Linux (pacman found)"; else err "Not an Arch-based system"; fi
 
     if getent hosts archlinux.org &>/dev/null || curl -fsS --max-time 3 https://archlinux.org &>/dev/null; then
@@ -251,13 +338,8 @@ install_packages() {
         exit 1
     fi
 
-    local packages=("${PACMAN_PACKAGES[@]}")
-    if [[ "$FULL_UI" -eq 1 ]]; then
-        packages+=("${OPTIONAL_UI_PACKAGES[@]}")
-        info "Full UI package set enabled (--full-ui)."
-    else
-        info "Lightweight package set enabled; Caelestia replaces Waybar."
-    fi
+    local packages=("${PACMAN_PACKAGES[@]}" "${SELECTED_OPTIONAL_PACKAGES[@]}")
+    info "Installing dependencies for the '$INSTALL_PROFILE' profile."
 
     local missing=()
     for pkg in "${packages[@]}"; do
@@ -266,6 +348,10 @@ install_packages() {
 
     if (( ${#missing[@]} > 0 )); then
         warn "Missing packages: ${missing[*]}"
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+            info "Dry run: would install missing packages: ${missing[*]}"
+            return 0
+        fi
         if ask "Install missing dependencies?" y; then
             (sudo pacman -S --needed --noconfirm "${missing[@]}" &>>"$LOGFILE") &
             local pm_pid=$!
@@ -274,7 +360,7 @@ install_packages() {
                 ok "Package installation finished."
             else
                 err "Pacman failed to install some packages (see $LOGFILE)."
-                info "If you need AUR packages like 'swaylock-effects' or 'rofi-wayland', please use an AUR helper (yay/paru)."
+                info "If you need Caelestia shell packages, use an AUR helper (yay/paru) or pass --skip-aur."
             fi
         fi
     else
@@ -305,6 +391,11 @@ install_aur_packages() {
         return 0
     fi
 
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "Dry run: would install ${CAELESTIA_AUR_PACKAGES[*]} with $helper."
+        return 0
+    fi
+
     info "Using AUR helper: $helper"
     if ask "Install Caelestia shell and CLI from the AUR with $helper?" y; then
         ("$helper" -S --needed --noconfirm "${CAELESTIA_AUR_PACKAGES[@]}" &>>"$LOGFILE") &
@@ -325,7 +416,6 @@ install_aur_packages() {
 # (e.g. `hyprmono update`) back up Hyprmono's own previous install, so the original
 # is recorded separately, never pruned, and is what uninstall restores.
 ORIGINAL_BACKUP_FILE="$LOGDIR/original-backup"
-KEEP_BACKUPS=5
 
 record_original_backup() {
     local dir="$1"
@@ -335,21 +425,15 @@ record_original_backup() {
     fi
 }
 
-prune_backups() {
-    local original=""
-    [[ -s "$ORIGINAL_BACKUP_FILE" ]] && original=$(< "$ORIGINAL_BACKUP_FILE")
-
-    local old=()
-    mapfile -t old < <(
-        find "$HOME" -maxdepth 1 -type d -name '.config-backup-*' -printf '%f\n' 2>/dev/null |
-            sort -r | tail -n +"$((KEEP_BACKUPS + 1))"
-    )
-    local b
-    for b in "${old[@]}"; do
-        [[ -n "$b" && "$HOME/$b" != "$original" ]] || continue
-        rm -rf -- "${HOME:?}/$b"
-        log "Pruned old backup $HOME/$b"
-    done
+backup_local_bin_entry() {
+    local name="$1" backup_dir="$2"
+    local source="$LOCAL_BIN/$name"
+    local destination="$backup_dir/.local-bin/$name"
+    [[ -e "$source" || -L "$source" ]] || return 0
+    [[ -e "$destination" || -L "$destination" ]] && return 0
+    mkdir -p "$backup_dir/.local-bin"
+    \cp -a -- "$source" "$destination"
+    log "Backed up existing local executable $source"
 }
 
 # --- Core Installation ---
@@ -363,15 +447,39 @@ install_configs() {
         exit 1
     fi
 
-    log "Starting backup..."
-    local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
-    mkdir -p "$backup_dir"
-    record_original_backup "$backup_dir"
-
     local deployed=()
     local folders=("$source_config"/*/)
+    local deploy_folders=()
+    local folder_path folder_name
+    for folder_path in "${folders[@]}"; do
+        folder_name=$(basename "${folder_path%/}")
+        case "$folder_name" in
+            fastfetch)
+                if ! component_selected "$folder_name"; then
+                    info "Skipping unselected optional $folder_name configuration."
+                    continue
+                fi
+                ;;
+        esac
+        deploy_folders+=("$folder_path")
+    done
+    folders=("${deploy_folders[@]}")
     local total=${#folders[@]}
     local count=0
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        for folder_path in "${folders[@]}"; do
+            info "Dry run: would deploy $(basename "${folder_path%/}") to $CONFIG_DIR/"
+        done
+        info "Dry run: would deploy runtime scripts and assets; no backup or files created."
+        return 0
+    fi
+
+    log "Starting backup..."
+    local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
+    [[ -e "$backup_dir" ]] && backup_dir="${backup_dir}-$$"
+    mkdir -p "$backup_dir"
+    record_original_backup "$backup_dir"
 
     for folder_path in "${folders[@]}"; do
         folder_path="${folder_path%/}"
@@ -387,14 +495,18 @@ install_configs() {
             local link_target
             link_target=$(readlink -f "$dest" 2>/dev/null || true)
             warn "$folder_name is a symlink -> ${link_target:-broken link}, replacing with a real directory"
+            \cp -a -- "$dest" "$backup_dir/"
+            log "Backed up symlink $dest"
             log "Removing symlink $dest (was -> $link_target)"
             rm -f "$dest"
-        fi
-
-        if [[ -d "$dest" ]]; then
+        elif [[ -d "$dest" ]]; then
             log "Backing up existing $dest ($(du -sh "$dest" 2>/dev/null | cut -f1))"
             \cp -rf "$dest" "$backup_dir/"
             log "Backed up $folder_name"
+        elif [[ -e "$dest" ]]; then
+            log "Backing up existing file $dest"
+            \cp -a -- "$dest" "$backup_dir/"
+            rm -f -- "$dest"
         fi
 
         # hypr/custom/*.lua are the user's personal overrides: never clobber them
@@ -432,12 +544,6 @@ install_configs() {
     if [[ -d "$CONFIG_DIR/hypr/hyprlock" ]]; then
         find "$CONFIG_DIR/hypr/hyprlock" -type f -name '*.sh' -exec chmod +x {} +
     fi
-    if [[ -f "$CONFIG_DIR/waybar/keybinds.sh" ]]; then
-        chmod +x "$CONFIG_DIR/waybar/keybinds.sh"
-    fi
-
-    prune_backups
-
     # Tree-style summary of what was deployed
     echo -e "\n${BOLD}${WHITE}Configuration${RESET}"
     local last_idx=$(( ${#deployed[@]} - 1 ))
@@ -456,7 +562,8 @@ install_configs() {
     mkdir -p "$LOCAL_BIN"
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
         local managed_script
-        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh reinstall.sh start-caelestia.sh uninstall.sh; do
+        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh uninstall.sh; do
+            backup_local_bin_entry "$managed_script" "$backup_dir"
             rm -f -- "$LOCAL_BIN/$managed_script"
         done
     fi
@@ -470,6 +577,7 @@ install_configs() {
             fi
 
             local script_dest="$LOCAL_BIN/$script_name"
+            backup_local_bin_entry "$script_name" "$backup_dir"
 
             if [[ -L "$script_dest" ]]; then
                 local script_link_target
@@ -486,17 +594,10 @@ install_configs() {
 
     # Create 'hyprmono' command symlink
     if [[ -f "$LOCAL_BIN/hyprmono.sh" ]]; then
+        backup_local_bin_entry "hyprmono" "$backup_dir"
         ln -sf "$LOCAL_BIN/hyprmono.sh" "$LOCAL_BIN/hyprmono"
         ok "Linked 'hyprmono' command"
     fi
-
-    # Clean up the CLI's old name (hyde / hyde-shell.sh) from previous installs.
-    # Only touch the symlink if it is ours.
-    if [[ -L "$LOCAL_BIN/hyde" && "$(readlink "$LOCAL_BIN/hyde")" == */hyde-shell.sh ]]; then
-        rm -f -- "$LOCAL_BIN/hyde"
-        info "Removed legacy 'hyde' command (now 'hyprmono')"
-    fi
-    rm -f -- "$LOCAL_BIN/hyde-shell.sh"
 
     # Deploy assets
     title "Asset Deployment"
@@ -527,7 +628,28 @@ install_configs() {
 
 install_calm_shell() {
     title "Calm-shell Setup"
+    if [[ "$SKIP_DEPS" -eq 1 ]]; then
+        info "Skipping optional Calm-shell setup because dependencies were disabled."
+        return 0
+    fi
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "Dry run: would offer to build Calm-shell from github.com/yksouthx/calm-shell.git."
+        return 0
+    fi
     if ask "Build and install Calm-shell from github.com/yksouthx/calm-shell.git?" y; then
+        local missing_build=()
+        local pkg
+        for pkg in "${CALM_BUILD_PACKAGES[@]}"; do
+            pacman -Qi "$pkg" &>/dev/null || missing_build+=("$pkg")
+        done
+        if (( ${#missing_build[@]} > 0 )); then
+            if [[ "$SKIP_PKGS" -eq 1 ]]; then
+                warn "Skipping Calm-shell build; required build packages are missing and --skip-pkgs was set."
+                return 0
+            fi
+            info "Installing optional Calm-shell build tools: ${missing_build[*]}"
+            sudo pacman -S --needed "${missing_build[@]}" &>>"$LOGFILE"
+        fi
         bash "$REPO_ROOT/scripts/install-calm-shell.sh"
         ok "Calm-shell is ready at $HOME/.local/bin/calm"
     else
@@ -547,48 +669,180 @@ print_footer() {
     printf "${RESET}\n"
 }
 
+validate_installation() {
+    title "Installation Validation"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "Dry run: installed files and runtime services cannot be validated yet."
+        return 0
+    fi
+
+    if [[ -f "$CONFIG_DIR/hypr/hyprland.lua" ]]; then
+        ok "Hyprland configuration is present."
+    else
+        warn "Hyprland configuration is missing; configuration deployment may have been skipped."
+    fi
+
+    local script
+    for script in start-caelestia.sh migrate.sh performance.sh profile.sh; do
+        if [[ -x "$LOCAL_BIN/$script" ]]; then
+            ok "Runtime helper is installed: $script"
+        else
+            warn "Runtime helper is missing: $LOCAL_BIN/$script"
+        fi
+    done
+
+    if has caelestia || has qs; then
+        ok "Quickshell/Caelestia runtime is available."
+    else
+        warn "Quickshell/Caelestia is not installed; install the Caelestia shell package to enable the desktop UI."
+    fi
+}
+
 main() {
    local ORIG_ARGS=("$@")
    # --repo /path/to/Hyprmono overrides auto-detection for this run
      while [[ $# -gt 0 ]]; do
        case "$1" in
            --repo)
+                 if [[ $# -lt 2 || -z "$2" ]]; then
+                     err "--repo requires a repository path"
+                     exit 2
+                 fi
                HYPRMONO_REPO="$2"
                shift 2
                ;;
            --repo=*)
-               HYPRMONO_REPO="${1#--repo=}"
+                 HYPRMONO_REPO="${1#--repo=}"
+                 if [[ -z "$HYPRMONO_REPO" ]]; then
+                     err "--repo requires a repository path"
+                     exit 2
+                 fi
                shift
                ;;
            --no-migrate)
                NO_MIGRATE=1
                shift
                ;;
+           --no-cleanup)
+               NO_CLEANUP=1
+               shift
+               ;;
            --skip-pkgs)
                SKIP_PKGS=1
+               shift
+               ;;
+           --skip-deps)
+               SKIP_DEPS=1
+               SKIP_PKGS=1
+               SKIP_AUR=1
                shift
                ;;
            --skip-aur)
                SKIP_AUR=1
                shift
                ;;
+           --terminal)
+               TERMINAL_MODE=1
+               shift
+               ;;
+           --minimal)
+               INSTALL_PROFILE="minimal"
+               shift
+               ;;
+           --standard)
+               INSTALL_PROFILE="standard"
+               shift
+               ;;
+           --extended)
+               INSTALL_PROFILE="extended"
+               shift
+               ;;
+           --custom)
+               INSTALL_PROFILE="custom"
+               shift
+               ;;
+           --profile)
+               if [[ $# -lt 2 || ! "$2" =~ ^(minimal|standard|extended|custom)$ ]]; then
+                   err "--profile requires minimal, standard, extended, or custom"
+                   exit 2
+               fi
+               INSTALL_PROFILE="$2"
+               shift 2
+               ;;
            --wipe|--fresh)
                WIPE_CONFIGS=1
                shift
                ;;
            --full-ui)
-               FULL_UI=1
+               INSTALL_PROFILE="extended"
                shift
+               ;;
+           --dry-run)
+               DRY_RUN=1
+               shift
+               ;;
+           --rollback)
+               if [[ $# -lt 2 || -z "$2" ]]; then
+                   err "--rollback requires a migration backup directory"
+                   exit 2
+               fi
+               ROLLBACK_DIR="$2"
+               shift 2
                ;;
            --yes|--non-interactive)
                ASSUME_YES=1
                shift
                ;;
+           --help|-h)
+               usage
+               return 0
+               ;;
            *)
-               shift
+               err "Unknown option: $1"
+               usage >&2
+               exit 2
                ;;
        esac
    done
+
+    if ! REPO_ROOT=$(resolve_repo_root); then
+        err "Could not locate the HyprMono repository."
+        info "Looked next to the installer, in $TARGET_REPO_DIR, and in common clone locations."
+        info "Fix by either:"
+        info "  1. Running from inside the cloned repo, or"
+        info "  2. ./install.sh --repo /path/to/HyprMono, or"
+        info "  3. HYPRMONO_REPO=/path/to/HyprMono ./install.sh"
+        exit 1
+    fi
+    ok "Repository located at $REPO_ROOT"
+
+    if [[ $EUID -eq 0 ]]; then
+        err "Safety Check: Do NOT run as root."
+        exit 1
+    fi
+
+    if [[ -n "$ROLLBACK_DIR" ]]; then
+        local rollback_args=(--rollback "$ROLLBACK_DIR")
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+            rollback_args=(--dry-run "${rollback_args[@]}")
+        fi
+        bash "$REPO_ROOT/scripts/migrate.sh" "${rollback_args[@]}"
+        return
+    fi
+
+    if [[ "$TERMINAL_MODE" -eq 0 && ${#ORIG_ARGS[@]} -eq 0 && -n "${WAYLAND_DISPLAY:-}" ]] &&
+        { has quickshell || has qs; } &&
+        { has kitty || has foot || has alacritty || has xterm; } &&
+        [[ -r "$REPO_ROOT/config/installer/Installer.qml" ]]; then
+        local quickshell_bin
+        if has quickshell; then
+            quickshell_bin=$(command -v quickshell)
+        else
+            quickshell_bin=$(command -v qs)
+        fi
+        export HYPRMONO_REPO="$REPO_ROOT"
+        exec "$quickshell_bin" -p "$REPO_ROOT/config/installer/Installer.qml"
+    fi
 
    clear
 
@@ -604,37 +858,50 @@ cat <<EOF
 
 EOF
 
-    if ! REPO_ROOT=$(resolve_repo_root); then
-        err "Could not locate the HyprMono repository."
-        info "Looked next to the installer, in $TARGET_REPO_DIR, and in common clone locations."
-        info "Fix by either:"
-        info "  1. Running from inside the cloned repo, or"
-        info "  2. ./install.sh --repo /path/to/HyprMono, or"
-        info "  3. HYPRMONO_REPO=/path/to/HyprMono ./install.sh"
-        exit 1
+    if [[ "$TERMINAL_MODE" -eq 1 ]]; then
+        info "Using the terminal installer."
     fi
-    ok "Repository located at $REPO_ROOT"
 
 printf "${DIM}Version     1.0${RESET}\n"
 printf "${DIM}Repository  %s${RESET}\n" "$REPO_ROOT"
 printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
 
-    if [[ $EUID -eq 0 ]]; then
-        err "Safety Check: Do NOT run as root."
+    scan_system
+
+    if ! has pacman && [[ "$DRY_RUN" -ne 1 ]]; then
+        err "Installation requires an Arch-based system with pacman; exiting before cleanup or deployment."
         exit 1
     fi
 
-    sudo -v || { err "Sudo authentication failed."; exit 1; }
-    keep_sudo_alive
+    select_profile_components
 
-    scan_system
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "Dry run enabled: no package, repository, or configuration changes will be made."
+    elif [[ "$SKIP_PKGS" -eq 1 ]]; then
+        info "Skipping sudo pre-authentication because system package installation is disabled."
+    else
+        sudo -v || { err "Sudo authentication failed."; exit 1; }
+        keep_sudo_alive
+    fi
+
+    if [[ "$NO_CLEANUP" -eq 1 ]]; then
+        info "Skipping desktop-component cleanup (--no-cleanup)."
+    elif [[ -x "$REPO_ROOT/scripts/migrate.sh" || -f "$REPO_ROOT/scripts/migrate.sh" ]]; then
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+            bash "$REPO_ROOT/scripts/migrate.sh" --dry-run
+        else
+            bash "$REPO_ROOT/scripts/migrate.sh"
+        fi
+    fi
 
     # Path enforcement
     if [[ "$NO_MIGRATE" -eq 1 ]]; then
         info "Skipping repository migration (--no-migrate)."
     elif [[ "$REPO_ROOT" != "$TARGET_REPO_DIR" ]]; then
         warn "Repository is at $REPO_ROOT instead of $TARGET_REPO_DIR"
-        if ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+            info "Dry run: would offer to migrate repository to $TARGET_REPO_DIR."
+        elif ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
             mkdir -p "$TARGET_REPO_DIR"
             # "/." copies dotfiles too, so .git survives and `hyprmono update` keeps working
             \cp -a "$REPO_ROOT/." "$TARGET_REPO_DIR/"
@@ -643,12 +910,30 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
             # exec skips the EXIT trap, so stop the sudo keep-alive loop ourselves
             # (the re-executed installer starts its own).
             kill "${SUDO_KEEPALIVE_PID:-}" 2>/dev/null || true
-            exec "$TARGET_REPO_DIR/scripts/$SELF_NAME" "${ORIG_ARGS[@]}" --no-migrate
+            local exec_args=()
+            local arg_index=0
+            while (( arg_index < ${#ORIG_ARGS[@]} )); do
+                case "${ORIG_ARGS[$arg_index]}" in
+                    --repo)
+                        arg_index=$((arg_index + 2))
+                        ;;
+                    --repo=*)
+                        arg_index=$((arg_index + 1))
+                        ;;
+                    *)
+                        exec_args+=("${ORIG_ARGS[$arg_index]}")
+                        arg_index=$((arg_index + 1))
+                        ;;
+                esac
+            done
+            exec_args+=("--no-migrate")
+            export HYPRMONO_REPO="$TARGET_REPO_DIR"
+            exec "$TARGET_REPO_DIR/scripts/$SELF_NAME" "${exec_args[@]}"
         fi
     fi
 
     if [[ "$SKIP_PKGS" -eq 1 ]]; then
-        info "Skipping package check (--skip-pkgs)."
+        info "Skipping system package check (--skip-pkgs/--skip-deps)."
     else
         install_packages
     fi
@@ -664,6 +949,8 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
         install_configs
         install_calm_shell
     fi
+
+    validate_installation
 
     title "Installation Complete"
 
@@ -689,6 +976,9 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     echo "  reboot (or reload Hyprland)"
     echo "  calm"
     echo "  caelestia shell -d (if Caelestia is installed)"
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        echo "  rerun without --dry-run to apply changes"
+    fi
     echo
 
     print_footer
