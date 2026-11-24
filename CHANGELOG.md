@@ -35,6 +35,11 @@ Notable changes to HyprMono are documented here.
 
 - Read bar RAM and load metrics asynchronously from `/proc` instead of spawning
   a recurring shell process.
+- Group repository-owned Hyprland and Quickshell sources under descriptive
+  app directories while preserving their installed config paths.
+- Keep the repository quality watcher out of the installed runtime scripts.
+- Remove the redundant `fuzzel-emojis.sh` forwarder; `hyprmono emoji` remains
+  the supported entry point.
 - Made the project-owned Quickshell UI the default startup path and retained
   Caelestia as a compatibility fallback.
 - Start Hypridle with the project-owned shell, which does not manage idle
@@ -49,6 +54,9 @@ Notable changes to HyprMono are documented here.
 
 ### Documentation
 
+- Removed duplicate top-level policy/contribution documents, an outdated
+  duplicate README, stale repository history/audit notes, and the empty sounds
+  placeholder.
 - Documented the modular bar, optional CAVA setup, and GPL-3.0 Lyne Dots
   visual reference; no Lyne Dots code or assets were copied.
 - Updated installation and requirements guides with Quickshell, migration,

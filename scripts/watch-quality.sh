@@ -46,7 +46,7 @@ run_checks() {
 
     if command -v qmllint >/dev/null 2>&1; then
         printf '\n== QML lint ==\n'
-        if ! qmllint "$REPO_ROOT"/config/hyprmono/*.qml \
+        if ! qmllint "$REPO_ROOT"/config/quickshell/*.qml \
             "$REPO_ROOT"/config/installer/*.qml; then
             failed=1
         fi

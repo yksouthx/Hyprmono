@@ -349,6 +349,14 @@ can_write_target() {
     [[ -d "$parent" && -w "$parent" ]]
 }
 
+config_target_name() {
+    case "$1" in
+        hyprland) printf 'hypr\n' ;;
+        quickshell) printf 'hyprmono\n' ;;
+        *) printf '%s\n' "$1" ;;
+    esac
+}
+
 run_environment_tests() {
     local failures=0
     local missing=()
@@ -382,8 +390,8 @@ run_environment_tests() {
     fi
 
     if [[ -d "$REPO_ROOT/config" &&
-        -f "$REPO_ROOT/config/hypr/hyprland.lua" &&
-        -f "$REPO_ROOT/config/hyprmono/shell.qml" &&
+        -f "$REPO_ROOT/config/hyprland/hyprland.lua" &&
+        -f "$REPO_ROOT/config/quickshell/shell.qml" &&
         -f "$REPO_ROOT/scripts/migrate.sh" ]]; then
         ok "Required repository files are present"
     else
@@ -569,7 +577,9 @@ install_configs() {
 
     if [[ "$DRY_RUN" -eq 1 ]]; then
         for folder_path in "${folders[@]}"; do
-            info "Dry run: would deploy $(basename "${folder_path%/}") to $CONFIG_DIR/"
+            local folder_name
+            folder_name=$(basename "${folder_path%/}")
+            info "Dry run: would deploy $(config_target_name "$folder_name") to $CONFIG_DIR/"
         done
         info "Dry run: would deploy runtime scripts and assets; no backup or files created."
         return 0
@@ -584,12 +594,14 @@ install_configs() {
     for folder_path in "${folders[@]}"; do
         folder_path="${folder_path%/}"
         local folder_name=$(basename "$folder_path")
+        local target_name
+        target_name=$(config_target_name "$folder_name")
         count=$((count + 1))
 
         printf "\n${DIM}  → %s${RESET}\n" "$folder_name"
         log "Deploying $folder_name"
 
-        local dest="$CONFIG_DIR/$folder_name"
+        local dest="$CONFIG_DIR/$target_name"
 
         if [[ -L "$dest" ]]; then
             local link_target
@@ -612,7 +624,7 @@ install_configs() {
         # hypr/custom/*.lua are the user's personal overrides: never clobber them
         # with the empty stubs from the repo, not even in --wipe mode.
         local preserved_custom=""
-        if [[ "$folder_name" == hypr && -d "$dest/custom" ]]; then
+        if [[ "$target_name" == hypr && -d "$dest/custom" ]]; then
             preserved_custom=$(mktemp -d)
             \cp -a "$dest/custom/." "$preserved_custom/"
         fi
@@ -636,7 +648,7 @@ install_configs() {
         fi
         log "Deployed $folder_name"
 
-        deployed+=("$folder_name")
+        deployed+=("$target_name")
         progress "$count" "$total"
     done
 
@@ -661,8 +673,9 @@ install_configs() {
     title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
+        # Include tools from earlier releases so a wipe removes stale copies.
         local managed_script
-        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh uninstall.sh; do
+        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh uninstall.sh watch-quality.sh; do
             backup_local_bin_entry "$managed_script" "$backup_dir"
             rm -f -- "$LOCAL_BIN/$managed_script"
         done
@@ -671,8 +684,8 @@ install_configs() {
         if [[ -f "$script" ]]; then
             local script_name=$(basename "$script")
 
-            # Don't install the installer itself as a runtime script
-            if [[ "$script_name" == "$SELF_NAME" ]]; then
+            # Keep installer and repository-only development tools out of the runtime bin.
+            if [[ "$script_name" == "$SELF_NAME" || "$script_name" == "watch-quality.sh" ]]; then
                 continue
             fi
 

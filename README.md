@@ -122,6 +122,11 @@ packages. The shell package supplies the upstream QML, icons, animations,
 fonts, and runtime assets; HyprMono only keeps the local integration config
 and wallpaper. Use `--skip-aur` to omit this step.
 
+Repository configuration is grouped by application: Hyprland sources are in
+`config/hyprland/` and Quickshell sources are in `config/quickshell/`. The
+installer maps these to the conventional runtime directories
+`~/.config/hypr/` and `~/.config/hyprmono/`.
+
 HyprMono follows the current Hyprland Lua configuration API. The installed entrypoint is
 `~/.config/hypr/hyprland.lua`; the monochrome palette lives in
 `~/.config/hypr/modules/colours.lua`, and personal changes belong in
@@ -195,7 +200,6 @@ Available commands:
 ~/.local/share/Hyprmono/
 ├── assets/
 │   ├── fonts/
-│   ├── sounds/
 │   └── wall.webp
 ├── config/
 │   ├── installer/

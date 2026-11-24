@@ -1,6 +1,7 @@
 # HyprMono bar and media dashboard
 
-The project-owned Quickshell UI lives in `config/hyprmono/`:
+The project-owned Quickshell UI sources live in `config/quickshell/` and are
+installed to `~/.config/hyprmono/`:
 
 - `shell.qml` selects the active MPRIS player and coordinates panels.
 - `Bar.qml` provides workspaces, active-window text, media, clock, RAM/load

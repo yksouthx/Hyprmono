@@ -20,7 +20,7 @@ for component in fish waybar rofi dunst fuzzel wofi swaync wlogout swaylock kde-
         exit 1
     fi
 done
-[[ ! -e "$REPO_ROOT/config/hypr/hyprpaper.conf" ]]
+[[ ! -e "$REPO_ROOT/config/hyprland/hyprpaper.conf" ]]
 
 run_profile() {
     local profile="$1"
@@ -45,6 +45,8 @@ grep -q 'Skipping unselected optional fastfetch configuration.' "$TEMP_DIR/minim
 grep -q 'Dry run: would install missing packages:' "$TEMP_DIR/minimal.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(fish|fastfetch|yazi)' "$TEMP_DIR/minimal.out"
 grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/minimal.out"
+grep -q "Dry run: would deploy hypr to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
+grep -q "Dry run: would deploy hyprmono to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(waybar|rofi|dunst|fuzzel|wofi|swaync|wlogout|swaylock|hyprpaper|network-manager-applet)' "$TEMP_DIR/minimal.out"
 
 run_profile standard
@@ -62,6 +64,29 @@ run_profile custom
 grep -q 'Skipping unselected optional fastfetch configuration.' "$TEMP_DIR/custom.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(fish|fastfetch|yazi)' "$TEMP_DIR/custom.out"
 ! grep -Eq 'would (install missing packages|deploy).*(waybar|rofi|dunst|swaync|wlogout|fuzzel|wofi)' "$TEMP_DIR/custom.out"
+
+cat > "$TEMP_DIR/bin/fc-cache" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+chmod +x "$TEMP_DIR/bin/fc-cache"
+mkdir -p "$TEMP_DIR/home/.local/bin"
+mkdir -p "$TEMP_DIR/home/.config/hypr/custom"
+printf 'personal override\n' > "$TEMP_DIR/home/.config/hypr/custom/user.lua"
+printf 'stale developer copy\n' > "$TEMP_DIR/home/.local/bin/watch-quality.sh"
+HOME="$TEMP_DIR/home" \
+    XDG_CONFIG_HOME="$TEMP_DIR/home/.config" \
+    XDG_CACHE_HOME="$TEMP_DIR/home/.cache" \
+    PATH="$TEMP_DIR/bin:$PATH" \
+    TERM=xterm \
+    "$REPO_ROOT/install.sh" \
+    --terminal --skip-deps --skip-aur --no-cleanup --no-migrate --yes --wipe \
+    > "$TEMP_DIR/deployment.out" 2>&1
+[[ ! -e "$TEMP_DIR/home/.local/bin/watch-quality.sh" ]]
+[[ -x "$TEMP_DIR/home/.local/bin/profile.sh" ]]
+[[ -f "$TEMP_DIR/home/.config/hypr/hyprland.lua" ]]
+[[ -f "$TEMP_DIR/home/.config/hyprmono/shell.qml" ]]
+grep -q 'personal override' "$TEMP_DIR/home/.config/hypr/custom/user.lua"
 
 cat > "$TEMP_DIR/bin/uname" <<'EOF'
 #!/usr/bin/env bash
