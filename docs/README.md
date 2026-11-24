@@ -26,12 +26,18 @@
 
 ## ◈ Design Philosophy
 
-HyprMono pairs a current Lua-configured Hyprland setup with the upstream
-Caelestia Quickshell shell. Caelestia is the sole bar, launcher, notification
-center, quick settings and session menu. HyprMono configures its workspaces,
-task list, clock, tray, audio/network/battery indicators, media and performance
-dashboard through the documented `shell.json`; it does not deploy competing
-Waybar, Rofi, Dunst, Fuzzel, Wofi, SwayNC or Wlogout configs/packages.
+HyprMono pairs a current Lua-configured Hyprland setup with its own modular
+Quickshell bar and media dashboard in `config/hyprmono/`. The bar groups
+workspaces and the active window on the left, media and clock in the center,
+and system load, tray and quick audio settings on the right. The
+dashboard uses MPRIS for artwork, metadata, seeking, playback, shuffle, repeat
+and player volume. The existing Caelestia configuration remains a fallback.
+
+The media layout uses [Lyne Dots](https://github.com/caioax/lyne-dots) as a
+visual reference only. No Lyne Dots QML, code or image assets are copied; its
+repository is GPL-3.0 licensed. The
+optional CAVA process is disabled by default and starts only when explicitly
+enabled and media is playing. The default spectrum is a static low-resource indicator.
 Standard adds Fastfetch, extended also adds Yazi, and custom asks about each
 optional app. `--full-ui` aliases extended.
 
@@ -42,7 +48,8 @@ optional app. `--full-ui` aliases extended.
 | Component | Description |
 | :--- | :--- |
 | **Hyprland** | Current official Lua-based tiling compositor configuration, heavily modularized. |
-| **Caelestia / Quickshell** | Integrated bar, launcher, widgets, notifications, quick settings, wallpaper controls and session UI. |
+| **Quickshell** | HyprMono's modular bar, media dashboard, tray and quick audio controls. |
+| **Caelestia** | Optional compatibility fallback shell. |
 | **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme and Nothing OS font. |
 | **Calm-shell** | Default interactive shell launched inside Kitty. |

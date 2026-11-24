@@ -26,22 +26,22 @@
 
 ## Contents
 
-HyprMono pairs a current Lua-configured Hyprland setup with the Caelestia
-Quickshell shell. Quickshell provides the bar, launcher, dock, widgets, quick
-settings, notifications, media controls, system information and wallpaper
-controls in one integrated UI. Caelestia is an upstream dependency; this
-repository configures and launches it rather than copying or forking its QML.
+HyprMono pairs a current Lua-configured Hyprland setup with a project-owned,
+modular Quickshell bar and media dashboard. The bar brings together
+workspaces/active window, a compact MPRIS media pill, clock, memory monitor,
+system tray and quick audio settings. The expanded media panel provides
+artwork, track details, seeking, playback, shuffle, repeat and player volume.
+The existing Caelestia shell configuration remains available as a startup
+fallback. HyprMono does not copy Lyne Dots code or assets; the media layout is
+an original implementation informed by the
+[GPL-3.0-licensed Lyne Dots reference](https://github.com/caioax/lyne-dots).
+See [bar and media dashboard documentation](docs/media-bar.md) for the module
+layout and optional CAVA setting.
 
-Caelestia is the sole bar, launcher, notification center, quick settings and
-session menu. HyprMono configures its existing workspaces, task list, clock,
-tray, audio/network/battery status, media, performance dashboard, fuzzy app
-search and notification timing through the documented `shell.json`. It does
-not deploy competing Waybar, Rofi, Dunst, Fuzzel, Wofi, SwayNC or Wlogout
-configs/packages. The standard profile adds Fastfetch, extended also adds
-Yazi, and custom asks about each optional app. A small on-demand Quickshell emoji
-picker is available with `Super + Shift + E` or `hyprmono emoji`; it uses
-`wl-clipboard` to copy selections.
-`--full-ui` remains an alias for extended. Hyprland also has selectable compositor profiles:
+The standard profile adds Fastfetch, extended also adds Yazi, and custom asks
+about each optional app. A small on-demand Quickshell emoji picker is available
+with `Super + Shift + E` or `hyprmono emoji`; it uses `wl-clipboard` to copy
+selections. `--full-ui` remains an alias for extended. Hyprland also has selectable compositor profiles:
 `low-resource` disables blur, shadows and animations; `balanced` uses reduced
 blur and shadows with animations enabled; `full-visual` keeps the default
 visual effects.
@@ -53,10 +53,10 @@ visual effects.
 | Component | Description |
 | :--- | :--- |
 | **Hyprland** | Current official Lua-based configuration, split into a main module and user overrides. |
-| **Caelestia shell** | Lightweight Quickshell desktop shell and status UI. |
+| **Quickshell** | Lightweight runtime for the project-owned bar and media dashboard. |
 | **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme. |
-| **Caelestia / Quickshell** | The single integrated bar, app launcher, notification center, quick settings, media and session UI. |
+| **Caelestia** | Optional compatibility fallback shell. |
 | **Calm-shell** | Preferred terminal shell, built from `yksouthx/calm-shell`. |
 
 ---

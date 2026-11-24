@@ -22,12 +22,17 @@ Notable changes to HyprMono are documented here.
   sessions, with the project wallpaper and an installation progress indicator.
 - Added a Quickshell settings window and `Super + I` shortcut for live
   compositor performance profile changes.
+- Added a project-owned three-section Quickshell bar with workspace and active
+  window indicators, clock, system load, tray, and quick audio settings.
+- Added an MPRIS media pill and dashboard with artwork, track details, seeking,
+  playback, shuffle, repeat, and volume controls; CAVA visualization is opt-in.
 
 ### Changed
 
-- Made the Caelestia Quickshell integration the default UI path. The minimal
-  installer no longer deploys or installs duplicate bars, launchers, and
-  notification components; `--full-ui` retains those alternatives.
+- Made the project-owned Quickshell UI the default startup path and retained
+  Caelestia as a compatibility fallback.
+- Start Hypridle with the project-owned shell, which does not manage idle
+  locking; Caelestia continues to use its own idle monitor.
 - Expanded installation scanning and added post-install validation.
 - Stop unsupported distributions before sudo authentication or cleanup; dry-run
   remains available for compatibility checks.
@@ -38,7 +43,7 @@ Notable changes to HyprMono are documented here.
 
 ### Documentation
 
+- Documented the modular bar, optional CAVA setup, and GPL-3.0 Lyne Dots
+  visual reference; no Lyne Dots code or assets were copied.
 - Updated installation and requirements guides with Quickshell, migration,
   rollback, dry-run, and profile usage.
-- Clarified that Caelestia's QML and UI runtime are provided by the upstream
-  shell package.

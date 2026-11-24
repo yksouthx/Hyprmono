@@ -227,6 +227,7 @@ resolve_repo_root() {
 PACMAN_PACKAGES=(
     git
     hyprland hyprlock hypridle kitty
+    quickshell
     xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     brightnessctl playerctl wireplumber pipewire-pulse wl-clipboard
@@ -691,10 +692,10 @@ validate_installation() {
         fi
     done
 
-    if has caelestia || has qs; then
-        ok "Quickshell/Caelestia runtime is available."
+    if has quickshell || has qs; then
+        ok "Quickshell runtime is available."
     else
-        warn "Quickshell/Caelestia is not installed; install the Caelestia shell package to enable the desktop UI."
+        warn "Quickshell is not installed; install quickshell to enable the desktop UI."
     fi
 }
 
@@ -975,7 +976,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     echo -e "${BOLD}${WHITE}Next${RESET}"
     echo "  reboot (or reload Hyprland)"
     echo "  calm"
-    echo "  caelestia shell -d (if Caelestia is installed)"
+    echo "  start-caelestia.sh (launches Hyprmono's shell or the Caelestia fallback)"
     if [[ "$DRY_RUN" -eq 1 ]]; then
         echo "  rerun without --dry-run to apply changes"
     fi

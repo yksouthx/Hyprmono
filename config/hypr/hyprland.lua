@@ -218,7 +218,7 @@ hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
 ---------------------
 
 hl.on("hyprland.start", function()
-    -- Caelestia owns idle + lock; this only starts hypridle when Caelestia is missing.
+    -- The custom shell uses hypridle; the Caelestia fallback manages idle itself.
     hl.exec_cmd("$HOME/.local/bin/start-idle.sh")
     hl.exec_cmd("$HOME/.local/bin/start-caelestia.sh")
 end)

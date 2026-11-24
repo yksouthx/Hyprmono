@@ -34,20 +34,19 @@ The installation script (`install.sh`) will attempt to install these automatical
 
 ### Core Packages
 - `hyprland`: The tiling compositor.
-- `caelestia shell`: Lightweight desktop shell and status UI, installed separately.
+- `quickshell`: Lightweight shell runtime for the project-owned bar and media UI.
 - `kitty`: Terminal emulator.
 - `hyprlock`: Screen locker.
 - `hypridle`: Idle management daemon.
 - `calm-shell`: Preferred interactive terminal shell, built by the installer from `https://github.com/yksouthx/calm-shell.git`.
 
-### Caelestia and optional packages
+### Shell and optional packages
 
 If `paru` or `yay` is installed, the installer offers `caelestia-cli` and
-`caelestia-shell`. The official shell package supplies Caelestia's QML, icons,
-animations, fonts and runtime assets. Pass `--skip-aur` to skip AUR setup.
-Caelestia replaces the separate bar, launcher, notification center and session
-menu; HyprMono no longer deploys Waybar, Rofi, Dunst, Fuzzel, Wofi, SwayNC or
-Wlogout configs/packages.
+`caelestia-shell` as a compatibility fallback. Pass `--skip-aur` to skip AUR
+setup. CAVA is optional and is only started when playback is active and
+`cavaVisualizerEnabled` is enabled in `~/.config/hyprmono/shell.qml`. Without
+CAVA, the media pill uses a static low-resource indicator.
 
 Fastfetch and Yazi are optional: minimal installs neither, standard adds
 Fastfetch, extended adds both, and custom asks about each independently.
@@ -82,14 +81,13 @@ config directories. The installer creates a timestamped backup before wiping.
 ## ◈ Hardware Compatibility Notes
 
 - **NVIDIA Users:** Ensure you have the latest proprietary drivers (`nvidia` or `nvidia-open-dkms`) and have enabled DRM kernel mode setting.
-- **Laptops:** Caelestia provides battery and brightness controls; brightness availability depends on the device and system permissions.
+- **Laptops:** Battery and brightness controls are available from the Caelestia fallback; the project-owned quick settings currently provides audio output control.
 - **Multi-Monitor:** Hyprland handles multi-monitor setups natively; add a monitor rule in `config/hypr/hyprland.lua` to customize your layout.
 
-## Caelestia shell
+## Quickshell bar and Caelestia fallback
 
-HyprMono configures the [Caelestia shell](https://github.com/caelestia-dots/shell)
-in `config/caelestia/shell.json`. Its built-in bar, launcher, notifications,
-dashboard, sidebar, wallpaper manager and session UI replace the former
-standalone components.
-The startup hook remains guarded, so the compositor can still start if
-Caelestia has not yet been installed.
+HyprMono's bar and media UI are implemented in `config/hyprmono/`. The
+Caelestia shell remains configured in `config/caelestia/shell.json` and is
+started as a fallback if the project-owned Quickshell entry point is
+unavailable. The startup hook remains guarded so the compositor can still
+start if neither shell is installed.
