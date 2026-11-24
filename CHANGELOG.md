@@ -26,9 +26,15 @@ Notable changes to HyprMono are documented here.
   window indicators, clock, system load, tray, and quick audio settings.
 - Added an MPRIS media pill and dashboard with artwork, track details, seeking,
   playback, shuffle, repeat, and volume controls; CAVA visualization is opt-in.
+- Added installer environment checks for platform, utilities, repository files,
+  writable targets, package manager, and available disk space.
+- Added `scripts/watch-quality.sh` to run project checks and tests continuously
+  while source files change, with optional automatic shell formatting.
 
 ### Changed
 
+- Read bar RAM and load metrics asynchronously from `/proc` instead of spawning
+  a recurring shell process.
 - Made the project-owned Quickshell UI the default startup path and retained
   Caelestia as a compatibility fallback.
 - Start Hypridle with the project-owned shell, which does not manage idle

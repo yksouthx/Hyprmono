@@ -16,6 +16,23 @@ PanelWindow {
     signal mediaClicked()
     signal quickSettingsClicked()
 
+    function updateSystemStatus() {
+        if (!memoryInfo.loaded || !loadAverage.loaded)
+            return
+
+        const memory = memoryInfo.text()
+        const total = memory.match(/^MemTotal:\s+(\d+)/m)
+        const available = memory.match(/^MemAvailable:\s+(\d+)/m)
+        const load = loadAverage.text().match(/^(\S+)/)
+        if (!total || !available || !load || Number(total[1]) <= 0)
+            return
+
+        const usedPercent = Math.floor(
+            (Number(total[1]) - Number(available[1])) * 100 / Number(total[1])
+        )
+        memoryText = `RAM ${usedPercent}% · LOAD ${load[1]}`
+    }
+
     screen: Quickshell.screens[0]
     anchors {
         top: true
@@ -28,26 +45,26 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "hyprmono-bar"
 
-    Process {
-        id: memorySample
-        command: [
-            "sh", "-c",
-            "memory=$(awk '/^MemTotal:/ { total=$2 } /^MemAvailable:/ { available=$2 } END { if (total > 0) printf \"RAM %d%%\", (total - available) * 100 / total }' /proc/meminfo); load=$(awk '{ print $1 }' /proc/loadavg); printf '%s · LOAD %s' \"$memory\" \"$load\""
-        ]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (text.trim() !== "")
-                    root.memoryText = text.trim()
-            }
-        }
+    FileView {
+        id: memoryInfo
+        path: "/proc/meminfo"
+        onLoaded: root.updateSystemStatus()
+    }
+
+    FileView {
+        id: loadAverage
+        path: "/proc/loadavg"
+        onLoaded: root.updateSystemStatus()
     }
 
     Timer {
         interval: 10000
         repeat: true
         running: true
-        triggeredOnStart: true
-        onTriggered: memorySample.running = true
+        onTriggered: {
+            memoryInfo.reload()
+            loadAverage.reload()
+        }
     }
 
     Rectangle {

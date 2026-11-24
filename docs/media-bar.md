@@ -11,6 +11,10 @@ The project-owned Quickshell UI lives in `config/hyprmono/`:
   previous/next, shuffle, repeat and player-volume controls.
 - `QuickSettings.qml` adjusts the PipeWire default output with `wpctl`.
 
+The bar reads RAM and load status asynchronously from `/proc` through
+Quickshell's file I/O, refreshing every 10 seconds without spawning a shell
+process.
+
 The MPRIS position timer runs only during playback. CAVA is opt-in: set
 `cavaVisualizerEnabled` to `true` in `shell.qml` and install CAVA to use the
 audio-reactive display. With it disabled, the pill uses a static indicator and

@@ -62,6 +62,10 @@ Fish is not part of the project configuration.
 - `cmake`, `ninja`, `gcc`, and `git`: Build and source prerequisites for Calm-shell.
 
 Use `./install.sh --dry-run` to preview the system scan and deployment plan.
+Before scanning or changing the system, the installer runs non-destructive
+environment checks for Linux, required utilities and repository files, writable
+install paths, package-manager availability, and free space. Required failures
+stop the install; low disk space is reported as a warning.
 The installer asks before removing each recognized component and backs up
 selected files. Shared packages are preserved; package removal always
 requires explicit approval. Use `hyprmono migrate --rollback <backup-directory>`

@@ -39,6 +39,10 @@ By participating in this project, you are expected to uphold our Code of Conduct
 - All shell scripts should include a proper shebang (e.g., `#!/usr/bin/env bash`).
 - Use `set -Eeuo pipefail` for robustness where applicable.
 - Ensure scripts are executable before committing.
+- Run `scripts/watch-quality.sh` to check and test on startup, then re-run
+  checks as files change. If `shfmt` is installed, it formats changed shell
+  scripts; semantic issues are reported and must be fixed manually. Use
+  `scripts/watch-quality.sh --once` for a single validation pass.
 
 ## ◈ Questions?
 If you have any questions, feel free to open an issue for discussion.

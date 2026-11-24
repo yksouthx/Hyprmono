@@ -332,6 +332,105 @@ scan_system() {
     echo
 }
 
+can_write_target() {
+    local target="$1"
+    local parent
+
+    if [[ -e "$target" ]]; then
+        [[ -d "$target" && -w "$target" ]]
+        return
+    fi
+
+    parent="$target"
+    while [[ ! -e "$parent" && "$parent" != "/" ]]; do
+        parent="${parent%/*}"
+        [[ -n "$parent" ]] || parent="/"
+    done
+    [[ -d "$parent" && -w "$parent" ]]
+}
+
+run_environment_tests() {
+    local failures=0
+    local missing=()
+    local command
+    local available_kib
+
+    title "Environment Tests"
+
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        ok "Linux operating system"
+    else
+        err "Linux is required."
+        failures=$((failures + 1))
+    fi
+
+    if (( BASH_VERSINFO[0] >= 4 )); then
+        ok "Bash ${BASH_VERSION}"
+    else
+        err "Bash 4 or newer is required."
+        failures=$((failures + 1))
+    fi
+
+    for command in uname readlink find cp mkdir mktemp awk; do
+        has "$command" || missing+=("$command")
+    done
+    if (( ${#missing[@]} == 0 )); then
+        ok "Required system utilities are available"
+    else
+        err "Required system utilities are missing: ${missing[*]}"
+        failures=$((failures + 1))
+    fi
+
+    if [[ -d "$REPO_ROOT/config" &&
+        -f "$REPO_ROOT/config/hypr/hyprland.lua" &&
+        -f "$REPO_ROOT/config/hyprmono/shell.qml" &&
+        -f "$REPO_ROOT/scripts/migrate.sh" ]]; then
+        ok "Required repository files are present"
+    else
+        err "Required configuration or installer files are missing from $REPO_ROOT."
+        failures=$((failures + 1))
+    fi
+
+    if [[ -d "$HOME" && -w "$HOME" ]] &&
+        can_write_target "$CONFIG_DIR" &&
+        can_write_target "$LOCAL_BIN"; then
+        ok "Home, configuration, and local-bin paths are writable"
+    else
+        err "Home or install target paths are not writable (HOME=$HOME, CONFIG_DIR=$CONFIG_DIR)."
+        failures=$((failures + 1))
+    fi
+
+    if has pacman; then
+        ok "Pacman package manager is available"
+    elif [[ "$DRY_RUN" -eq 1 ]]; then
+        warn "Pacman is unavailable; a dry run can continue, but installation cannot install system packages."
+    else
+        err "Pacman is required for installation."
+        failures=$((failures + 1))
+    fi
+
+    if has df && has awk; then
+        if available_kib=$(df -Pk "$HOME" 2>/dev/null | awk 'NR == 2 { print $4 }') &&
+            [[ "$available_kib" =~ ^[0-9]+$ ]]; then
+            if (( available_kib >= 2097152 )); then
+                ok "At least 2 GiB of free space is available"
+            else
+                warn "Less than the recommended 2 GiB of free space is available in $HOME."
+            fi
+        else
+            warn "Could not determine free space for $HOME."
+        fi
+    else
+        warn "Cannot check free space because df or awk is unavailable."
+    fi
+
+    if (( failures > 0 )); then
+        err "$failures required environment test(s) failed; no installation changes were made."
+        return 1
+    fi
+    ok "All required environment tests passed."
+}
+
 install_packages() {
     title "Package Check"
     if ! has pacman; then
@@ -867,12 +966,11 @@ printf "${DIM}Version     1.0${RESET}\n"
 printf "${DIM}Repository  %s${RESET}\n" "$REPO_ROOT"
 printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
 
-    scan_system
-
-    if ! has pacman && [[ "$DRY_RUN" -ne 1 ]]; then
-        err "Installation requires an Arch-based system with pacman; exiting before cleanup or deployment."
+    if ! run_environment_tests; then
         exit 1
     fi
+
+    scan_system
 
     select_profile_components
 
