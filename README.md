@@ -119,11 +119,11 @@ Each run saves its full output to a unique, owner-only
 `~/Desktop/hyprmono-test-install-*.log` file.
 
 If Quickshell reports that it was built against a different Qt version, rebuild
-the package against the installed Qt before retrying. On Arch systems using an
-AUR helper, for example:
+the package against the installed Qt before retrying. On Arch, run the helper
+script; it uses paru or yay and leaves package confirmation to that tool:
 
 ```bash
-paru -S --rebuild quickshell
+./scripts/rebuild-quickshell.sh
 ```
 
 Existing managed configs are backed up to `~/.config-backup-<timestamp>/`

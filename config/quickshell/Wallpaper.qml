@@ -22,7 +22,7 @@ PanelWindow {
 
     Image {
         anchors.fill: parent
-        source: Qt.resolvedUrl("../hypr/assets/wall.webp")
+        source: Qt.resolvedUrl("assets/wall.webp")
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         // Decode at screen size instead of the full source resolution.

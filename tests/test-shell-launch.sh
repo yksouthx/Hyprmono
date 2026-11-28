@@ -8,6 +8,10 @@ TEMP_DIR="$(mktemp -d)"
 readonly TEMP_DIR
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
+[[ -s "$REPO_ROOT/config/quickshell/assets/wall.webp" ]]
+grep -q 'source: Qt.resolvedUrl("assets/wall.webp")' \
+    "$REPO_ROOT/config/quickshell/Wallpaper.qml"
+
 mkdir -p "$TEMP_DIR/bin" "$TEMP_DIR/config/hyprmono"
 touch "$TEMP_DIR/config/hyprmono/shell.qml"
 

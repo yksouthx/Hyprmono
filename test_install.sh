@@ -281,10 +281,10 @@ check_quickshell() {
     if grep -Eiq \
         'Quickshell was built against Qt .*system has updated to Qt .*without rebuilding' \
         "$output"; then
-        fail "Quickshell must be rebuilt against the installed Qt before testing this configuration."
+        fail "Quickshell must be rebuilt against the installed Qt. Run scripts/rebuild-quickshell.sh, then retry."
     fi
     if grep -Eiq \
-        'QQmlApplicationEngine.*failed|failed to load component|(^|[[:space:]])(Error|ReferenceError|TypeError|SyntaxError):|QML.*(error|failed)|cannot assign|unable to assign|module .*not installed|(^|[[:space:]])error([:[:space:]]|$)' \
+        'QQmlApplicationEngine.*failed|failed to load component|Cannot open: qrc:/qs-blackhole|(^|[[:space:]])(Error|ReferenceError|TypeError|SyntaxError):|QML.*(error|failed)|cannot assign|unable to assign|module .*not installed|(^|[[:space:]])error([:[:space:]]|$)' \
         "$output"; then
         fail "Quickshell logged a startup or QML error."
     fi
