@@ -31,6 +31,10 @@ esac
 STUB
 cat > "$TEMP_DIR/bin/quickshell" <<'STUB'
 #!/usr/bin/env bash
+if [[ "${QS_QT_MISMATCH:-0}" == 1 ]]; then
+    printf 'Quickshell was built against Qt 6.12.0 but the system has updated to Qt 6.12.1 without rebuilding the package.\n' >&2
+    exit 0
+fi
 if [[ "${QS_ERROR:-0}" == 1 ]]; then
     printf 'Error: intentional smoke-test failure\n' >&2
     exit 1
@@ -75,6 +79,17 @@ grep -q 'rollback completed' "$TEMP_DIR/hyprland-error.out"
 [[ ! -e "$HOME/.cache/Hyprmono/original-backup" ]]
 [[ ! -e "$XDG_STATE_HOME/Hyprmono" ]]
 
+if QS_QT_MISMATCH=1 "$REPO_ROOT/test_install.sh" >"$TEMP_DIR/qt-mismatch.out" 2>&1; then
+    cat "$TEMP_DIR/qt-mismatch.out" >&2
+    echo "test_install.sh should reject a Quickshell/Qt version mismatch" >&2
+    exit 1
+fi
+grep -q 'Quickshell must be rebuilt against the installed Qt' "$TEMP_DIR/qt-mismatch.out"
+grep -q 'rollback completed' "$TEMP_DIR/qt-mismatch.out"
+[[ "$(< "$HOME/.config/hyprmono/shell.qml")" == "pre-existing shell config" ]]
+[[ "$(< "$HOME/.local/bin/start-shell.sh")" == "pre-existing shell helper" ]]
+[[ ! -e "$XDG_STATE_HOME/Hyprmono" ]]
+
 if QS_ERROR=1 "$REPO_ROOT/test_install.sh" >"$TEMP_DIR/quickshell-error.out" 2>&1; then
     cat "$TEMP_DIR/quickshell-error.out" >&2
     echo "test_install.sh should fail on the Quickshell error" >&2
@@ -102,4 +117,11 @@ grep -q 'Installation smoke test passed' "$TEMP_DIR/success.out"
 [[ "$(< "$HOME/.config/hyprmono/shell.qml")" != "pre-existing shell config" ]]
 [[ -x "$HOME/.local/bin/start-shell.sh" ]]
 [[ "$(< "$HOME/.local/bin/my-helper")" == "my helper" ]]
+mapfile -t desktop_logs < <(find "$HOME/Desktop" -maxdepth 1 -type f \
+    -name 'hyprmono-test-install-*.log' -print)
+[[ "${#desktop_logs[@]}" -eq 4 ]]
+grep -q 'Quickshell was built against Qt 6.12.0' "$HOME"/Desktop/hyprmono-test-install-*.log
+for log_file in "${desktop_logs[@]}"; do
+    [[ "$(stat -c '%a' "$log_file")" == 600 ]]
+done
 printf 'test_install.sh rollback and success checks passed.\n'

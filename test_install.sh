@@ -8,6 +8,7 @@ LOCAL_BIN="$HOME/.local/bin"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/Hyprmono"
 LOG_DIR="$HOME/.cache/Hyprmono"
 SNAPSHOT_DIR=""
+TEST_LOG=""
 ROLLBACK_NEEDED=0
 HYPRLAND_RELOADED=0
 declare -a NEW_DIRECTORIES=()
@@ -24,7 +25,24 @@ check its configuration errors, and smoke-test Quickshell. Any failure restores
 the exact pre-test files and reloads the restored Hyprland configuration.
 
 Requires an active Hyprland Wayland session and an installed Quickshell.
+Test output is written to a new, private log file on your Desktop.
 EOF
+}
+
+start_test_log() {
+    local desktop configured
+    desktop="$HOME/Desktop"
+    if command -v xdg-user-dir >/dev/null 2>&1; then
+        configured=$(xdg-user-dir DESKTOP 2>/dev/null || true)
+        if [[ "$configured" == "$HOME"/* ]]; then
+            desktop="$configured"
+        fi
+    fi
+    mkdir -p -- "$desktop"
+    TEST_LOG=$(mktemp "$desktop/hyprmono-test-install-$(date '+%Y%m%d-%H%M%S')-XXXXXX.log")
+    chmod 600 "$TEST_LOG"
+    exec > >(tee -a "$TEST_LOG") 2>&1
+    printf 'Test log: %s\n' "$TEST_LOG"
 }
 
 say_error() {
@@ -255,14 +273,22 @@ check_quickshell() {
         timeout --signal=TERM --kill-after=2s 6s \
         "$quickshell_bin" -n -p "$shell_file" >"$output" 2>&1 || status=$?
 
+        if [[ -s "$output" ]]; then
+            printf '%s\n' '--- Quickshell smoke-test output ---'
+            cat "$output"
+            printf '%s\n' '--- End Quickshell output ---'
+        fi
+    if grep -Eiq \
+        'Quickshell was built against Qt .*system has updated to Qt .*without rebuilding' \
+        "$output"; then
+        fail "Quickshell must be rebuilt against the installed Qt before testing this configuration."
+    fi
     if grep -Eiq \
         'QQmlApplicationEngine.*failed|failed to load component|(^|[[:space:]])(Error|ReferenceError|TypeError|SyntaxError):|QML.*(error|failed)|cannot assign|unable to assign|module .*not installed|(^|[[:space:]])error([:[:space:]]|$)' \
         "$output"; then
-        cat "$output" >&2
         fail "Quickshell logged a startup or QML error."
     fi
     if (( status != 0 && status != 124 )); then
-        cat "$output" >&2
         fail "Quickshell smoke test exited with status $status."
     fi
     printf 'Quickshell smoke test passed.\n'
@@ -274,6 +300,7 @@ main() {
         usage
         return 0
     fi
+    start_test_log
     (( $# == 0 )) || {
         usage >&2
         return 2

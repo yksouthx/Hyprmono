@@ -42,7 +42,8 @@ Notable changes to HyprMono are documented here.
 
 - Added `./test_install.sh` to test a minimal deployment in the active
   Hyprland/Quickshell session and automatically restore pre-test files if
-  either smoke check fails.
+  either smoke check fails; it also rejects Quickshell binaries built against
+  a different Qt version and saves a private log on the Desktop.
 - Reusable Quickshell easing animation for the media pill and animated
   media/quick-settings panel entrances.
 - System tray context menus in the bar (right-click; left-click for menu-only

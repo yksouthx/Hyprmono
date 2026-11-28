@@ -115,6 +115,16 @@ It reloads Hyprland, checks for configuration errors, and starts Quickshell for
 a short smoke test. If the installer, Hyprland, or Quickshell reports an error,
 the script restores the files that existed before the test and reloads the
 previous Hyprland configuration. A successful test leaves HyprMono installed.
+Each run saves its full output to a unique, owner-only
+`~/Desktop/hyprmono-test-install-*.log` file.
+
+If Quickshell reports that it was built against a different Qt version, rebuild
+the package against the installed Qt before retrying. On Arch systems using an
+AUR helper, for example:
+
+```bash
+paru -S --rebuild quickshell
+```
 
 Existing managed configs are backed up to `~/.config-backup-<timestamp>/`
 before deployment. The minimal profile is the default. Standard adds Fastfetch; `--full-ui`
