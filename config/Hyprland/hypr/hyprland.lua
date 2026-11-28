@@ -52,7 +52,6 @@ hl.config({
 })
 hl.permission("/usr/(bin|local/bin)/grim", "screencopy", "allow")
 hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow")
-hl.permission("/usr/(bin|local/bin)/quickshell", "screencopy", "allow")
 hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
 
 -----------------------
@@ -219,7 +218,7 @@ hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
 ---------------------
 
 hl.on("hyprland.start", function()
-    -- The custom shell uses hypridle; the Caelestia fallback manages idle itself.
+    -- Caffyne Shell uses the Hyprmono idle configuration.
     hl.exec_cmd("$HOME/.local/bin/start-session-services.sh")
     hl.exec_cmd("$HOME/.local/bin/start-idle.sh")
     hl.exec_cmd("$HOME/.local/bin/start-shell.sh")
@@ -244,8 +243,9 @@ hl.bind(main_mod .. " + B", hl.dsp.exec_cmd(browser))
 hl.bind(main_mod .. " + R", hl.dsp.exec_cmd("$HOME/.local/bin/launch-menu.sh"))
 hl.bind(main_mod .. " + T", hl.dsp.exec_cmd(text_editor))
 hl.bind(main_mod .. " + I", hl.dsp.exec_cmd(
-    "quickshell -n -p " .. string.format("%q", config_home .. "/hyprmono/Settings.qml")))
-hl.bind(main_mod .. " + SHIFT + E", hl.dsp.exec_cmd("$HOME/.local/bin/hyprmono emoji"))
+    "fabric-cli exec caffyne-shell \"bar_manager.toggle('Settings')\""))
+hl.bind(main_mod .. " + SHIFT + E", hl.dsp.exec_cmd(
+    "$HOME/.local/bin/fuzzel-emojis.sh"))
 hl.bind("ALT + F4", hl.dsp.window.close())
 hl.bind(main_mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(main_mod .. " + P", hl.dsp.window.pseudo())
@@ -269,13 +269,6 @@ hl.bind(main_mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(main_mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(main_mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Caelestia shell panels. These global shortcuts are harmless no-ops unless Caelestia is running.
-hl.bind("SUPER + SUPER_L", hl.dsp.global("caelestia:launcher"), { release = true })
-hl.bind("CTRL + ALT + Delete", hl.dsp.global("caelestia:session"))
-hl.bind(main_mod .. " + N", hl.dsp.global("caelestia:sidebar"))
-hl.bind(main_mod .. " + K", hl.dsp.global("caelestia:showall"))
-hl.bind("CTRL + ALT + C", hl.dsp.global("caelestia:clearNotifs"), { locked = true })
--- Lock: Caelestia's lock screen when it is registered, hyprlock otherwise.
 hl.bind(main_mod .. " + L", hl.dsp.exec_cmd("$HOME/.local/bin/lock-screen.sh"))
 
 local media_binds = {

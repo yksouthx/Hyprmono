@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Start the small session helpers that neither Hyprland nor the Quickshell bar provide:
+# Start the small session helpers that neither Hyprland nor Caffyne Shell provide:
 #   - a polkit authentication agent, so GUI privilege prompts work
 #   - fnott, the notification daemon (project shell only)
-#   - nm-applet, whose menu is shown from the bar's system tray (project shell only)
-# Caelestia has its own notifications and network controls, so the last two are
-# skipped unless HyprMono's own shell is installed.
+# - nm-applet, whose menu is shown from the bar's system tray
 set -u
 
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -33,7 +31,7 @@ for candidate in \
     fi
 done
 
-if [[ -r "$config_home/hyprmono/shell.qml" ]]; then
+if [[ -x "$config_home/caffyne-shell/start.sh" ]]; then
     if command -v fnott >/dev/null 2>&1 && ! notifications_owned; then
         start_once fnott fnott
     fi

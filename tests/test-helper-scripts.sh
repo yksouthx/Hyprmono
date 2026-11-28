@@ -19,18 +19,14 @@ BASE_PATH="/usr/bin:/bin"
 export CALLS="$TEMP_DIR/calls"
 
 # ---------- lock-screen.sh ----------
-bin="$TEMP_DIR/lock-with-caelestia"
+bin="$TEMP_DIR/lock-hyprlock"
 stub "$bin" hyprlock
-printf '#!/bin/sh\necho "hyprctl $*" >> "$CALLS"\n[ "$1" = globalshortcuts ] && echo "caelestia:lock > lock"\nexit 0\n' > "$bin/hyprctl"
-chmod +x "$bin/hyprctl"
 : > "$CALLS"
 PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-screen.sh"
-grep -q 'hyprctl dispatch hl.dsp.global("caelestia:lock")' "$CALLS"
-! grep -q '^hyprlock' "$CALLS"
+grep -q '^hyprlock' "$CALLS"
 
-bin="$TEMP_DIR/lock-without-caelestia"
+bin="$TEMP_DIR/lock-with-config"
 stub "$bin" hyprlock
-stub "$bin" hyprctl
 : > "$CALLS"
 PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-screen.sh" || true
 grep -q '^hyprlock' "$CALLS"
@@ -43,18 +39,7 @@ if PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-sc
 fi
 
 # ---------- launch-menu.sh ----------
-bin="$TEMP_DIR/menu-with-caelestia"
-mkdir -p "$bin"
-printf '#!/bin/sh\necho "hyprctl $*" >> "$CALLS"\n[ "$1" = globalshortcuts ] && echo "caelestia:launcher > launcher"\nexit 0\n' > "$bin/hyprctl"
-chmod +x "$bin/hyprctl"
-stub "$bin" fuzzel
-: > "$CALLS"
-PATH="$bin:$BASE_PATH" bash "$REPO_ROOT/scripts/launch-menu.sh"
-grep -q 'caelestia:launcher' "$CALLS"
-! grep -q '^fuzzel' "$CALLS"
-
 bin="$TEMP_DIR/menu-fuzzel"
-stub "$bin" hyprctl
 stub "$bin" fuzzel
 : > "$CALLS"
 PATH="$bin:$BASE_PATH" bash "$REPO_ROOT/scripts/launch-menu.sh"
@@ -111,8 +96,9 @@ printf '#!/bin/sh\nexit 0\n' > "$services_bin/busctl"       # no owner of the no
 chmod +x "$services_bin/busctl"
 
 with_shell="$TEMP_DIR/cfg-with-shell"
-mkdir -p "$with_shell/hyprmono"
-: > "$with_shell/hyprmono/shell.qml"
+mkdir -p "$with_shell/caffyne-shell"
+printf '#!/bin/sh\nexit 0\n' > "$with_shell/caffyne-shell/start.sh"
+chmod +x "$with_shell/caffyne-shell/start.sh"
 without_shell="$TEMP_DIR/cfg-without-shell"
 mkdir -p "$without_shell"
 
@@ -121,7 +107,7 @@ run_services "$services_bin" "$with_shell"
 grep -q '^fnott' "$CALLS"
 grep -q '^nm-applet --indicator' "$CALLS"
 
-# Caelestia only (no project shell): Caelestia owns notifications and network UI.
+# Caffyne absent: skip project-shell notification and network helpers.
 run_services "$services_bin" "$without_shell"
 ! grep -q '^fnott' "$CALLS"
 ! grep -q '^nm-applet' "$CALLS"

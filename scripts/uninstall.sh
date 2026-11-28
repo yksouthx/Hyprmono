@@ -9,13 +9,13 @@ set -Eeuo pipefail
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 LOCAL_BIN="$HOME/.local/bin"
 # Directories the current installer deploys. Used when no deployment record exists.
-CURRENT_TARGETS=(hypr hyprmono caelestia calm-shell kitty vim fontconfig xdg-desktop-portal fastfetch fuzzel fnott)
+CURRENT_TARGETS=(hypr caffyne-shell calm-shell kitty vim fontconfig xdg-desktop-portal fastfetch fuzzel fnott)
 # install.sh records what it actually deployed here, so uninstall never removes
 # unrelated directories (fish, waybar, rofi, ...) that HyprMono does not manage.
 DEPLOYED_FILE="$HOME/.cache/Hyprmono/deployed-targets"
 TARGETS=()
 # Include tools from earlier releases so uninstall removes stale copies.
-INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh)
+INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-caffyne-shell.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh)
 BACKUP_PREFIX=".config-backup-"
 LOG_FILE="$HOME/.cache/Hyprmono/uninstall.log"
 # install.sh records the very first backup (the user's original configs) here.

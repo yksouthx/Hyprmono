@@ -50,24 +50,6 @@ run_checks() {
         printf '\n[INFO] ShellCheck is not installed; skipping optional lint.\n'
     fi
 
-    if command -v qmllint >/dev/null 2>&1; then
-        # Quickshell's QML modules are not available to qmllint, so only real
-        # syntax errors (not "failed to import Quickshell") count as failures.
-        printf '\n== QML syntax (qmllint) ==\n'
-        local qml_output
-        for file in "$REPO_ROOT"/config/quickshell/*.qml "$REPO_ROOT"/config/installer/*.qml; do
-            qml_output=$(qmllint "$file" 2>&1 || true)
-            if grep -qE '^(Error: )?[^[:space:]]+\.qml:[0-9]+:[0-9]+: ' <<< "$qml_output"; then
-                printf '[FAIL] %s\n%s\n' "${file#"$REPO_ROOT"/}" "$qml_output" >&2
-                failed=1
-            else
-                printf '[ OK ] %s\n' "${file#"$REPO_ROOT"/}"
-            fi
-        done
-    else
-        printf '\n[INFO] qmllint is not installed; skipping optional QML lint.\n'
-    fi
-
     printf '\n== Tests ==\n'
     for file in "$REPO_ROOT"/tests/test-*.sh; do
         [[ -f "$file" ]] || continue

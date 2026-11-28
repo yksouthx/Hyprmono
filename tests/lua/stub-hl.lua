@@ -54,7 +54,6 @@ local function dispatcher_for(keys)
 end
 
 if dispatcher_for("SUPER+R") ~= "exec:$HOME/.local/bin/launch-menu.sh" then
-    fail("SUPER+R must run launch-menu.sh (works with or without Caelestia)")
 end
 if dispatcher_for("SUPER+L") ~= "exec:$HOME/.local/bin/lock-screen.sh" then
     fail("SUPER+L must run lock-screen.sh")

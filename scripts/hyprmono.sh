@@ -58,23 +58,6 @@ run_repo_script() {
     fi
 }
 
-# Open one of the installed Quickshell windows (settings, emoji picker).
-open_qml_window() {
-    local file="$1" description="$2"
-    if [[ ! -r "$file" ]]; then
-        err "$description is not installed at $file. Run hyprmono install first."
-        exit 1
-    fi
-    if command -v quickshell >/dev/null 2>&1; then
-        quickshell -n -p "$file"
-    elif command -v qs >/dev/null 2>&1; then
-        qs -n -p "$file"
-    else
-        err "Quickshell is required to open the $description."
-        exit 1
-    fi
-}
-
 show_help() {
     echo -e "${BOLD}${MAGENTA}H Y P R M O N O${RESET} - HyprMono Management"
     echo
@@ -88,9 +71,9 @@ show_help() {
     echo -e "  audit       Verify system dependencies"
     echo -e "  migrate     Scan duplicate shell components; --rollback DIR restores backups"
     echo -e "  profile     Show or switch between low-resource, balanced, and full-visual modes"
-    echo -e "  settings    Open the HyprMono performance settings window"
-    echo -e "  performance Measure Hyprland and Quickshell CPU/RAM; compare a baseline"
-    echo -e "  emoji       Open the Quickshell emoji picker"
+    echo -e "  settings    Open Caffyne Shell quick settings"
+    echo -e "  performance Measure Hyprland and Caffyne Shell CPU/RAM; compare a baseline"
+    echo -e "  emoji       Pick and copy an emoji with Fuzzel"
     echo -e "  help        Display this help interface"
     echo
 }
@@ -126,8 +109,9 @@ case "${1:-help}" in
         for bin in Hyprland hypridle hyprlock kitty wpctl brightnessctl playerctl wl-copy fuzzel fnott; do
             command -v "$bin" >/dev/null 2>&1 || missing+=("$bin")
         done
-        if ! command -v quickshell >/dev/null 2>&1 && ! command -v qs >/dev/null 2>&1; then
-            missing+=("quickshell")
+        if [[ ! -x "${XDG_CONFIG_HOME:-$HOME/.config}/caffyne-shell/start.sh" ]] &&
+            [[ ! -r "${XDG_CONFIG_HOME:-$HOME/.config}/caffyne-shell/main.py" ]]; then
+            missing+=("caffyne-shell")
         fi
         if (( ${#missing[@]} == 0 )); then
             log "${GREEN}Audit successful: core components present.${RESET}"
@@ -143,10 +127,11 @@ case "${1:-help}" in
         run_repo_script profile.sh "${@:2}"
         ;;
     settings)
-        open_qml_window "${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/Settings.qml" "settings window"
+        fabric-cli exec caffyne-shell "bar_manager.toggle('Settings')" 2>/dev/null ||
+            err "Caffyne Shell settings applet is unavailable."
         ;;
     emoji)
-        open_qml_window "${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/EmojiPicker.qml" "emoji picker"
+        run_repo_script fuzzel-emojis.sh
         ;;
     performance)
         run_repo_script performance.sh "${@:2}"

@@ -4,6 +4,12 @@ Notable changes to HyprMono are documented here.
 
 ## Unreleased
 
+### Changed
+
+- Replaced Quickshell with Caffyne Shell and rebuilt the bar's active-window,
+  process/CPU, RAM, media/CAVA, wallpaper, quick-settings and emoji integrations
+  on Fabric/GTK.
+
 ### Fixed
 
 - The Quickshell wallpaper now loads from inside the shell root instead of

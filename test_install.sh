@@ -21,10 +21,10 @@ Usage: ./test_install.sh
 
 Deploy HyprMono's minimal configuration without installing packages, migrating
 the repository, or cleaning other desktop components. Then reload Hyprland,
-check its configuration errors, and smoke-test Quickshell. Any failure restores
+check its configuration errors, and smoke-test Caffyne Shell. Any failure restores
 the exact pre-test files and reloads the restored Hyprland configuration.
 
-Requires an active Hyprland Wayland session and an installed Quickshell.
+Requires an active Hyprland Wayland session and an installed Caffyne Shell.
 Test output is written to a new, private log file on your Desktop.
 EOF
 }
@@ -61,11 +61,7 @@ collect_config_targets() {
         name=$(basename "${dir%/}")
         case "$name" in
             Hyprland) CONFIG_TARGETS+=(hypr) ;;
-            quickshell)
-                CONFIG_TARGETS+=(hyprmono)
-                [[ -d "$dir/caelestia" ]] && CONFIG_TARGETS+=(caelestia)
-                ;;
-            installer|fastfetch) ;;
+            fastfetch) ;;
             *) CONFIG_TARGETS+=("$name") ;;
         esac
     done
@@ -110,6 +106,7 @@ take_snapshot() {
     : > "$SNAPSHOT_DIR/manifest"
 
     collect_config_targets
+    snapshot_path "$CONFIG_DIR/caffyne-shell"
     for target in "${CONFIG_TARGETS[@]}"; do
         snapshot_path "$CONFIG_DIR/$target"
     done
@@ -122,7 +119,6 @@ take_snapshot() {
         snapshot_path "$LOCAL_BIN/$(basename "$script")"
     done
     snapshot_path "$LOCAL_BIN/hyprmono"
-    snapshot_path "$LOCAL_BIN/start-caelestia.sh"
 
     snapshot_path "$LOG_DIR/deployed-targets"
     snapshot_path "$LOG_DIR/original-backup"
@@ -259,38 +255,38 @@ check_hyprland() {
     fi
 }
 
-check_quickshell() {
-    local quickshell_bin="$1"
-    local shell_file="$CONFIG_DIR/hyprmono/shell.qml"
-    local output="$SNAPSHOT_DIR/quickshell.log"
+check_caffyne_shell() {
+    local caffyne_start="$CONFIG_DIR/caffyne-shell/start.sh"
+    local caffyne_main="$CONFIG_DIR/caffyne-shell/main.py"
+    local output="$SNAPSHOT_DIR/caffyne-shell.log"
     local status=0
 
-    [[ -r "$shell_file" ]] || fail "deployed Quickshell entry point is missing: $shell_file"
-    printf 'Starting a Quickshell smoke test (up to 6 seconds)...\n'
-    XDG_CACHE_HOME="$SNAPSHOT_DIR/quickshell-cache" \
-        XDG_DATA_HOME="$SNAPSHOT_DIR/quickshell-data" \
-        XDG_STATE_HOME="$SNAPSHOT_DIR/quickshell-state" \
+    [[ -x "$caffyne_start" || -r "$caffyne_main" ]] ||
+        fail "Caffyne Shell entry point is missing: $caffyne_start"
+    printf 'Starting a Caffyne Shell smoke test (up to 6 seconds)...\n'
+    XDG_CACHE_HOME="$SNAPSHOT_DIR/caffyne-cache" \
+        XDG_DATA_HOME="$SNAPSHOT_DIR/caffyne-data" \
+        XDG_STATE_HOME="$SNAPSHOT_DIR/caffyne-state" \
         timeout --signal=TERM --kill-after=2s 6s \
-        "$quickshell_bin" -n -p "$shell_file" >"$output" 2>&1 || status=$?
+        "$caffyne_start" >"$output" 2>&1 || status=$?
 
     if [[ -s "$output" ]]; then
-        printf '%s\n' '--- Quickshell smoke-test output ---'
+        printf '%s\n' '--- Caffyne Shell smoke-test output ---'
         cat "$output"
-        printf '%s\n' '--- End Quickshell output ---'
+        printf '%s\n' '--- End Caffyne Shell output ---'
     fi
     if grep -Eiq \
-        'QQmlApplicationEngine.*failed|failed to load component|Cannot open: qrc:/qs-blackhole|(^|[[:space:]])(Error|ReferenceError|TypeError|SyntaxError):|QML.*(error|failed)|cannot assign|unable to assign|module .*not installed|(^|[[:space:]])error([:[:space:]]|$)' \
+        '(^|[[:space:]])(Error|Traceback|ModuleNotFoundError|ImportError|SyntaxError):|Python.*(error|failed)|cannot import|module .*not found|(^|[[:space:]])error([:[:space:]]|$)' \
         "$output"; then
-        fail "Quickshell logged a startup or QML error."
+        fail "Caffyne Shell logged a startup or Python error."
     fi
     if (( status != 0 && status != 124 )); then
-        fail "Quickshell smoke test exited with status $status."
+        fail "Caffyne Shell smoke test exited with status $status."
     fi
-    printf 'Quickshell smoke test passed.\n'
+    printf 'Caffyne Shell smoke test passed.\n'
 }
 
 main() {
-    local quickshell_bin
     if [[ "${1:-}" == --help || "${1:-}" == -h ]]; then
         usage
         return 0
@@ -304,13 +300,8 @@ main() {
     [[ -n "${WAYLAND_DISPLAY:-}" ]] || fail "no Wayland session detected."
     command -v hyprctl >/dev/null 2>&1 || fail "hyprctl is not installed."
     command -v timeout >/dev/null 2>&1 || fail "timeout is required."
-    if command -v quickshell >/dev/null 2>&1; then
-        quickshell_bin=$(command -v quickshell)
-    elif command -v qs >/dev/null 2>&1; then
-        quickshell_bin=$(command -v qs)
-    else
-        fail "Quickshell is not installed."
-    fi
+    [[ -x "$CONFIG_DIR/caffyne-shell/start.sh" || -r "$CONFIG_DIR/caffyne-shell/main.py" ]] ||
+        fail "Caffyne Shell is not installed."
     hyprctl -j monitors >/dev/null 2>&1 || fail "could not connect to the active Hyprland instance."
 
     take_snapshot
@@ -323,7 +314,7 @@ main() {
     fi
 
     check_hyprland
-    check_quickshell "$quickshell_bin"
+    check_caffyne_shell
 
     ROLLBACK_NEEDED=0
     printf 'Installation smoke test passed. HyprMono remains installed.\n'

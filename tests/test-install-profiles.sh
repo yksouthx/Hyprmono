@@ -50,11 +50,9 @@ grep -q 'Home, configuration, and local-bin paths are writable' "$TEMP_DIR/minim
 grep -q 'All required environment tests passed' "$TEMP_DIR/minimal.out"
 grep -q 'Skipping unselected optional fastfetch configuration.' "$TEMP_DIR/minimal.out"
 grep -q 'Dry run: would install missing packages:' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*cava' "$TEMP_DIR/minimal.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(fish|fastfetch|yazi)' "$TEMP_DIR/minimal.out"
-grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy hypr to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
-grep -q "Dry run: would deploy hyprmono to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
-grep -q "Dry run: would deploy caelestia to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(waybar|rofi|dunst|wofi|swaync|wlogout|swaylock|hyprpaper)' "$TEMP_DIR/minimal.out"
 # The project shell ships its own bar; fuzzel (launcher), fnott (notifications) and the
 # network applet (shown from the bar's tray) are part of every profile.
@@ -71,7 +69,6 @@ grep -q 'Dry run: would deploy fastfetch' "$TEMP_DIR/standard.out"
 
 run_profile extended
 grep -q 'Dry run: would install missing packages:.*fastfetch yazi' "$TEMP_DIR/extended.out"
-grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/extended.out"
 grep -q 'Dry run: would deploy fastfetch' "$TEMP_DIR/extended.out"
 ! grep -Eq 'would (install missing packages|deploy).*(waybar|rofi|dunst|swaync|wlogout|wofi)' "$TEMP_DIR/extended.out"
 
@@ -100,9 +97,6 @@ HOME="$TEMP_DIR/home" \
 [[ ! -e "$TEMP_DIR/home/.local/bin/watch-quality.sh" ]]
 [[ -x "$TEMP_DIR/home/.local/bin/profile.sh" ]]
 [[ -f "$TEMP_DIR/home/.config/hypr/hyprland.lua" ]]
-[[ -f "$TEMP_DIR/home/.config/hyprmono/shell.qml" ]]
-[[ -f "$TEMP_DIR/home/.config/caelestia/shell.json" ]]
-[[ ! -e "$TEMP_DIR/home/.config/hyprmono/caelestia" ]]
 grep -q 'personal override' "$TEMP_DIR/home/.config/hypr/custom/user.lua"
 
 mkdir -p "$TEMP_DIR/failure-home" "$TEMP_DIR/bin"

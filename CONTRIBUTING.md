@@ -45,7 +45,7 @@ By participating in this project, you are expected to uphold our Code of Conduct
   (4-space indent); it is off by default so saving never rewrites a file. Use
   `scripts/watch-quality.sh --once` for a single validation pass.
 - Run the whole suite with `for t in tests/test-*.sh; do bash "$t"; done` as a
-  normal user. Tests that need Lua, `qmllint` or `shellcheck` skip themselves
+  normal user. Tests that need Lua or `shellcheck` skip themselves
   when the tool is missing, and the installer tests skip when run as root.
 
 ## ◈ Questions?

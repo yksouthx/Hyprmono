@@ -1,0 +1,94 @@
+/* HyprMono's fresh Caffyne visual system. */
+.bar {
+    padding: 8px 12px;
+    background-color: transparent;
+}
+
+.bar.top {
+    box-shadow: none;
+}
+
+.bar.bottom {
+    box-shadow: none;
+}
+
+.bar-widget,
+.bar-button {
+    border-radius: 999px;
+}
+
+.bar-widget {
+    background-color: rgba(18, 20, 25, 0.94);
+    padding: 3px 6px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+                0 4px 16px rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+}
+
+.bar-widget.hovered,
+.bar-widget.applet-open {
+    background-color: rgba(48, 52, 62, 0.98);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+                0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+.bar-button {
+    min-height: 38px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 999px;
+}
+
+.workspace,
+.workspace-pill {
+    border-radius: 999px;
+}
+
+.workspace {
+    min-width: 28px;
+    min-height: 28px;
+    margin: 2px;
+}
+
+.workspace.active {
+    background-color: var(--primary);
+    color: var(--on_primary);
+}
+
+.bar-media {
+    min-width: 244px;
+    max-width: 318px;
+    min-height: 38px;
+    border-radius: 999px;
+    background-color: rgba(32, 35, 43, 0.96);
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.bar-media-label {
+    min-width: 128px;
+    max-width: 188px;
+    font-weight: 600;
+}
+
+.bar-cava {
+    min-width: 42px;
+    min-height: 18px;
+    padding: 0 4px;
+}
+
+.cava-bar {
+    min-width: 2px;
+    max-width: 2px;
+    border-radius: 2px;
+    background: linear-gradient(to top, var(--primary), var(--tertiary));
+}
+
+.clock {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background-color: rgba(32, 35, 43, 0.96);
+    border-radius: 999px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
