@@ -632,6 +632,9 @@ install_configs() {
     backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
     [[ -e "$backup_dir" ]] && backup_dir="${backup_dir}-$$"
     mkdir -p "$backup_dir"
+    if [[ -n "${HYPRMONO_BACKUP_DIR_FILE:-}" ]]; then
+        printf '%s\n' "$backup_dir" > "$HYPRMONO_BACKUP_DIR_FILE"
+    fi
     record_original_backup "$backup_dir"
 
     local index

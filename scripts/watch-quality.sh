@@ -29,8 +29,8 @@ run_checks() {
     local file
 
     printf '\n== Shell syntax ==\n'
-    for file in "$REPO_ROOT"/scripts/*.sh "$REPO_ROOT"/tests/*.sh \
-        "$REPO_ROOT"/scripts/run-installer-terminal; do
+    for file in "$REPO_ROOT"/test_install.sh "$REPO_ROOT"/scripts/*.sh \
+        "$REPO_ROOT"/tests/*.sh "$REPO_ROOT"/scripts/run-installer-terminal; do
         [[ -f "$file" ]] || continue
         if bash -n "$file"; then
             printf '[ OK ] %s\n' "${file#"$REPO_ROOT"/}"
@@ -41,7 +41,8 @@ run_checks() {
 
     if command -v shellcheck >/dev/null 2>&1; then
         printf '\n== ShellCheck ==\n'
-        if ! shellcheck -S warning "$REPO_ROOT"/install.sh "$REPO_ROOT"/scripts/*.sh \
+        if ! shellcheck -S warning "$REPO_ROOT"/install.sh "$REPO_ROOT"/test_install.sh \
+            "$REPO_ROOT"/scripts/*.sh \
             "$REPO_ROOT"/tests/*.sh "$REPO_ROOT"/scripts/run-installer-terminal; then
             failed=1
         fi

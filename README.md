@@ -104,6 +104,18 @@ packages or configuration:
 ./install.sh --dry-run
 ```
 
+To test a minimal deployment in an active Hyprland session without installing
+packages or cleaning/migrating other components, run:
+
+```bash
+./test_install.sh
+```
+
+It reloads Hyprland, checks for configuration errors, and starts Quickshell for
+a short smoke test. If the installer, Hyprland, or Quickshell reports an error,
+the script restores the files that existed before the test and reloads the
+previous Hyprland configuration. A successful test leaves HyprMono installed.
+
 Existing managed configs are backed up to `~/.config-backup-<timestamp>/`
 before deployment. The minimal profile is the default. Standard adds Fastfetch; `--full-ui`
 selects extended and also adds Yazi. No profile installs a duplicate bar.
