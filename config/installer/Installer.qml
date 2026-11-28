@@ -67,7 +67,7 @@ ApplicationWindow {
             anchors.centerIn: parent
             width: Math.min(parent.width * 0.78, 720)
             height: Math.min(parent.height * 0.48, 340)
-            source: Qt.resolvedUrl("../../assets/wall.webp")
+            source: Qt.resolvedUrl("assets/wall.webp")
             fillMode: Image.PreserveAspectCrop
             asynchronous: true
             cache: true

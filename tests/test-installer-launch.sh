@@ -8,6 +8,10 @@ TEMP_DIR="$(mktemp -d)"
 readonly TEMP_DIR
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
+[[ -s "$REPO_ROOT/config/installer/assets/wall.webp" ]]
+grep -q 'source: Qt.resolvedUrl("assets/wall.webp")' \
+    "$REPO_ROOT/config/installer/Installer.qml"
+
 mkdir -p "$TEMP_DIR/bin"
 cat > "$TEMP_DIR/bin/quickshell" <<'STUB'
 #!/usr/bin/env bash
