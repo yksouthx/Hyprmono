@@ -34,26 +34,25 @@ if PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-sc
     exit 1
 fi
 
-# ---------- launch-menu.sh ----------
-bin="$TEMP_DIR/menu-fuzzel"
-stub "$bin" fuzzel
+# ---------- launch-menu.sh (Caffyne Dash) ----------
+bin="$TEMP_DIR/menu-caffyne"
+mkdir -p "$bin"
+cat > "$bin/fabric-cli" <<'EOF'
+#!/bin/sh
+printf 'fabric-cli %s\n' "$*" >> "$CALLS"
+EOF
+chmod +x "$bin/fabric-cli"
 : > "$CALLS"
 PATH="$bin:$BASE_PATH" bash "$REPO_ROOT/scripts/launch-menu.sh"
-grep -q '^fuzzel' "$CALLS"
-
-bin="$TEMP_DIR/menu-wofi"
-stub "$bin" wofi
-: > "$CALLS"
-PATH="$bin:$BASE_PATH" bash "$REPO_ROOT/scripts/launch-menu.sh"
-grep -q '^wofi --show drun' "$CALLS"
+grep -q "^fabric-cli exec caffyne-shell bar_manager.toggle('Dash')$" "$CALLS"
 
 bin="$TEMP_DIR/menu-none"
 mkdir -p "$bin"
 if PATH="$bin:$BASE_PATH" bash "$REPO_ROOT/scripts/launch-menu.sh" 2>"$TEMP_DIR/menu-none.err"; then
-    echo "launch-menu.sh must fail when no launcher exists" >&2
+    echo "launch-menu.sh must fail when Caffyne IPC is unavailable" >&2
     exit 1
 fi
-grep -q 'No application launcher found' "$TEMP_DIR/menu-none.err"
+grep -q 'fabric-cli is not installed' "$TEMP_DIR/menu-none.err"
 
 # ---------- launch_first_available.sh (no eval, first available wins) ----------
 bin="$TEMP_DIR/first"

@@ -13,7 +13,6 @@
             "auto_hide": false,
             "left": [
               "Dash",
-              {"widget": "Launcher", "variant": "icon"},
               {"widget": "Workspaces", "variant": "icon"},
               "Focused",
               {"widget": "Processes", "variant": "scale"},

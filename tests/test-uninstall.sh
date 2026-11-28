@@ -24,7 +24,7 @@ mkdir -p "$HOME/.config/hypr" "$HOME/.config/hyprmono" "$HOME/.config/fish" "$HO
 echo deployed > "$HOME/.config/hypr/hyprland.lua"
 echo "user fish config" > "$HOME/.config/fish/config.fish"
 echo "user rofi config" > "$HOME/.config/rofi/config.rasi"
-for name in hyprmono.sh start-shell.sh start-idle.sh launch-menu.sh lock-screen.sh; do
+for name in hyprmono.sh start-shell.sh start-idle.sh launch-menu.sh lock-screen.sh desktop-diagnostics.sh; do
     printf '#!/bin/sh\n' > "$HOME/.local/bin/$name"
 done
 ln -s "$HOME/.local/bin/hyprmono.sh" "$HOME/.local/bin/hyprmono"
@@ -56,7 +56,7 @@ script -qec "bash '$REPO_ROOT/scripts/uninstall.sh'" /dev/null <<< "yy" >"$TEMP_
 [[ -e "$HOME/.local/bin/my-own-tool" ]]
 
 # Installed helpers and the command link are removed.
-for name in hyprmono hyprmono.sh start-shell.sh start-idle.sh launch-menu.sh lock-screen.sh; do
+for name in hyprmono hyprmono.sh start-shell.sh start-idle.sh launch-menu.sh lock-screen.sh desktop-diagnostics.sh; do
     [[ ! -e "$HOME/.local/bin/$name" && ! -L "$HOME/.local/bin/$name" ]]
 done
 

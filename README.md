@@ -36,12 +36,13 @@ bar's media widget with a CAVA-backed 12-band spectrum while media is playing.
 The Caffyne bar also restores active-window text, CPU/process status, RAM
 percentage and the HyprMono wallpaper.
 The bar uses floating capsule/pill surfaces, rounded widgets, soft shadows and
-a subtle top-lit gloss. Fuzzel uses a translucent charcoal panel with a crisp
-silver edge to match.
+a subtle top-lit gloss. The Caffyne Dash uses a dark translucent panel and
+rounded app tiles to match; Fuzzel remains the emoji picker's menu.
 
 The standard profile adds Fastfetch, extended also adds Yazi, and custom asks
-about each optional app. Caffyne's launcher is available with
-`Super + Shift + E` or `hyprmono emoji`. `--full-ui` remains an alias for extended.
+about each optional app. Open Caffyne's Dash app menu with `Super + R`; use
+`Super + Shift + E` or `hyprmono emoji` for the emoji picker.
+`--full-ui` remains an alias for extended.
 
 ---
 
@@ -68,12 +69,12 @@ cd Hyprmono
 ```
 
 The installer checks the distribution and available hardware, scans for known
-duplicate bars and shell frameworks (Waybar, Eww, AGS, HyprPanel) and old
-HyprMono helpers under `~/.config`, `~/.local/share` and `~/.local/bin`, and
-checks installed packages for reverse dependencies. Launchers, notification
-daemons, wallpaper tools, lock screens and tray applets are never offered for
-removal, because the HyprMono bar does not replace them. It shows each
-candidate and asks separately before removing it. Selected files
+duplicate bars and shell frameworks (Waybar, Eww, AGS, HyprPanel), the
+replaced Rofi app menu, and old HyprMono helpers under `~/.config`,
+`~/.local/share` and `~/.local/bin`, and checks installed packages for reverse
+dependencies. Notification daemons, wallpaper tools, lock screens, and tray
+applets are never offered for removal. Each candidate is shown and requires
+separate approval before removal. Selected files
 are backed up under `~/.local/state/Hyprmono/migration-backups/`; packages are
 never removed without an explicit per-package approval. Shared packages are
 preserved. `--yes` does not approve cleanup.
@@ -120,10 +121,11 @@ selects extended and also adds Yazi. No profile installs a duplicate bar.
 On upgrades, a previous HyprMono-managed `~/.config/hypr` is backed up and
 removed; unrelated, untracked configs are left alone.
 
-Every profile installs two small companions for the HyprMono shell, themed to
-match it (`config/fuzzel/`, `config/fnott/`):
+Every profile installs a notification daemon and a small emoji-picker
+companion for the HyprMono shell (`config/fnott/`, `config/fuzzel/`):
 
-- **fuzzel** is the application launcher (`Super + R`).
+- **Caffyne Dash** is the app menu and shell control surface (`Super + R`).
+- **fuzzel** is used by the emoji picker (`Super + Shift + E`).
 - **fnott** is the notification daemon, started with the session when the
   HyprMono shell is installed and no other daemon already owns
   `org.freedesktop.Notifications`.
@@ -207,9 +209,16 @@ Available commands:
 - `uninstall`: Remove all HyprMono configurations.
 - `update`: Pull latest changes and sync configurations.
 - `audit`: Perform a system check for dependencies.
+- `diagnostics`: Print a read-only snapshot of desktop configuration, packages, processes, and user services.
 - `migrate`: Review duplicate bar/shell components and restore migration backups.
 - `settings`: Toggle the Caffyne Shell settings applet.
 - `emoji`: Pick and copy an emoji with Fuzzel.
+
+Run `hyprmono diagnostics` from the target desktop session when collecting
+system-audit information. It reports only selected session variables and
+process names (not command-line arguments or the full environment), and does
+not install, stop, or modify anything. Package and user-service details depend
+on the available package manager and active user session.
 
 
 ---

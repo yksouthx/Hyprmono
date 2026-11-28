@@ -6,6 +6,14 @@ Notable changes to HyprMono are documented here.
 
 ### Changed
 
+- Route `Super + R` to Caffyne Dash, style the Dash surface, remove the
+  redundant bar launcher button, and offer Waybar/Rofi configs and safe
+  packages (including Rofi-Wayland) for explicit migration.
+
+- Ensure the Caffyne Media applet is present in existing bar layouts and route
+  native and Flatpak Spotify windows to a named Niri Music workspace with a
+  `Mod+M` focus binding.
+
 - Replaced the shipped Hyprland compositor, lock, idle and portal configs with
   Niri KDL, made Niri the sole installed compositor, and updated its session
   helpers, installer, documentation and tests.
@@ -67,6 +75,10 @@ Notable changes to HyprMono are documented here.
 - Kitty config: removed an inline comment kitty does not support.
 
 ### Added
+
+- Added a read-only `hyprmono diagnostics` snapshot for session variables,
+  configuration paths, installed desktop packages, relevant processes,
+  autostart entries, user services, notification ownership and Niri outputs.
 
 - Added an optional custom HyprMono SDDM theme with a grayscale wallpaper,
   session selector, clock, power actions, Wayland greeter configuration,

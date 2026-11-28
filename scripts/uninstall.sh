@@ -15,7 +15,7 @@ CURRENT_TARGETS=(hypr niri caffyne-shell calm-shell kitty vim fontconfig xdg-des
 DEPLOYED_FILE="$HOME/.cache/Hyprmono/deployed-targets"
 TARGETS=()
 # Include tools from earlier releases so uninstall removes stale copies.
-INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-caffyne-shell.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh)
+INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh desktop-diagnostics.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-caffyne-shell.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh)
 BACKUP_PREFIX=".config-backup-"
 LOG_FILE="$HOME/.cache/Hyprmono/uninstall.log"
 # install.sh records the very first backup (the user's original configs) here.

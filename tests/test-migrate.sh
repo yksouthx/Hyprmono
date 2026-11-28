@@ -19,16 +19,31 @@ echo daemon > "$HOME/.config/swaync/config.json"
 echo wall > "$HOME/.config/hyprpaper/hyprpaper.conf"
 echo old > "$HOME/.local/bin/hyde"
 
-# pacman must not report anything installed, so no package becomes a candidate.
-printf '#!/bin/sh\nexit 1\n' > "$TEMP_DIR/bin/pacman"
+cat > "$TEMP_DIR/bin/pacman" <<'EOF'
+#!/usr/bin/env bash
+case "$1" in
+    -Qq)
+        [[ "${2:-}" == rofi ]]
+        ;;
+    -Qi)
+        [[ "${2:-}" == rofi ]] || exit 1
+        printf 'Name            : rofi\nRequired By     : None\n'
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+EOF
 chmod +x "$TEMP_DIR/bin/pacman"
 export PATH="$TEMP_DIR/bin:$PATH"
 
-# --- dry run: bars/legacy helpers are reported; launchers/notification daemons never are
+# --- dry run: Caffyne-replaced Waybar/Rofi are reported; other services are preserved
 out="$(bash "$REPO_ROOT/scripts/migrate.sh" --dry-run 2>&1 </dev/null)"
 grep -q 'waybar' <<< "$out"
+grep -q 'rofi' <<< "$out"
 grep -q 'hyde' <<< "$out"
-for kept in rofi dunst wofi swaync hyprpaper; do
+grep -q 'application menu replaced by Caffyne Dash' <<< "$out"
+for kept in dunst wofi swaync hyprpaper; do
     if grep -qi "config/$kept" <<< "$out"; then
         echo "migrate.sh must not offer to remove $kept" >&2
         exit 1

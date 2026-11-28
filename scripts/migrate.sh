@@ -38,12 +38,13 @@ usage() {
     cat <<'EOF'
 Usage: migrate.sh [--dry-run] [--rollback BACKUP_DIR]
 
-Scan for known duplicate bar / desktop-shell components (Waybar, Eww, AGS,
-HyprPanel) and old HyprMono helpers. Nothing is removed unless the user
-approves each item. --dry-run only reports candidates.
+Scan for known duplicate bar / desktop-shell components (Waybar, Rofi,
+Rofi-Wayland, Eww, AGS, HyprPanel) and old HyprMono helpers. Nothing is removed
+unless the user approves each item. --dry-run only reports candidates.
 
-Launchers, notification daemons, wallpaper daemons, lock screens and network
-applets are never offered for removal: the HyprMono bar does not replace them.
+The Caffyne Dash replaces Waybar and Rofi in this setup. Other launchers,
+notification daemons, wallpaper daemons, lock screens and network applets are
+not offered for removal.
 
 Restore a migration backup with --rollback and its exact backup directory.
 EOF
@@ -63,24 +64,22 @@ add_path_candidate() {
 
 scan_paths() {
     local name root
-    # Only bars / shell frameworks are duplicates of the Caffyne Shell bar.
-    # Launchers, notification daemons, wallpaper tools, lock screens and tray
-    # applets are NOT replaced by it, so they are deliberately never listed.
+    # Caffyne Dash replaces Waybar's bar and Rofi's application-menu role.
     for root in "${CONFIG_ROOTS[@]}"; do
-        for name in waybar hyprpanel eww ags; do
+        for name in waybar rofi hyprpanel eww ags; do
             add_path_candidate "$root/$name" \
-                "$name configuration (an existing bar / desktop-shell layer; Caffyne Shell replaces it)" config
+                "$name configuration (replaced by the Caffyne Dash in this setup)" config
         done
     done
 
     for root in "${SHARE_ROOTS[@]}"; do
-        for name in waybar eww ags hyprpanel; do
+        for name in waybar rofi eww ags hyprpanel; do
             add_path_candidate "$root/$name" \
-                "$name user data (an existing bar or desktop-shell component)" data
+                "$name user data (replaced by the Caffyne Dash in this setup)" data
         done
     done
 
-    for name in waybar eww ags hyprpanel hyde hyde-shell.sh cpuinfo.sh gpuinfo.sh; do
+    for name in waybar rofi eww ags hyprpanel hyde hyde-shell.sh cpuinfo.sh gpuinfo.sh; do
         case "$name" in
             hyde|hyde-shell.sh|cpuinfo.sh|gpuinfo.sh)
                 add_path_candidate "$LOCAL_BIN/$name" \
@@ -96,7 +95,7 @@ scan_paths() {
 
 scan_packages() {
     local pkg reverse
-    local -a candidates=(waybar eww aylurs-gtk-shell hyprpanel)
+    local -a candidates=(waybar rofi rofi-wayland eww aylurs-gtk-shell hyprpanel)
 
     command -v pacman >/dev/null 2>&1 || return 0
     for pkg in "${candidates[@]}"; do
@@ -114,6 +113,7 @@ scan_packages() {
 package_reason() {
     case "$1" in
         waybar) printf '%s' "status bar replaced by Caffyne Shell" ;;
+        rofi|rofi-wayland) printf '%s' "application menu replaced by Caffyne Dash" ;;
         eww|aylurs-gtk-shell|hyprpanel) printf '%s' "desktop-shell/widget framework alternative to Caffyne Shell" ;;
         *) printf '%s' "known optional desktop-shell component" ;;
     esac

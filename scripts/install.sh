@@ -796,7 +796,7 @@ install_configs() {
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
         # Include tools from earlier releases so a wipe removes stale copies.
         local managed_script
-        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-caffyne-shell.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh; do
+        for managed_script in change_wallpaper.sh cpuinfo.sh desktop-diagnostics.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-caffyne-shell.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh; do
             backup_local_bin_entry "$managed_script" "$backup_dir"
             rm -f -- "$LOCAL_BIN/$managed_script"
         done

@@ -4,6 +4,16 @@ window-rule {
 }
 
 window-rule {
+    match app-id=r#"(?i)^spotify$"#
+    open-on-workspace "Music"
+}
+
+window-rule {
+    match app-id=r#"(?i)^com\.spotify\.Client$"#
+    open-on-workspace "Music"
+}
+
+window-rule {
     match is-active=true
     opacity 1.0
 }

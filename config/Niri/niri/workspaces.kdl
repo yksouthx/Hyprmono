@@ -5,3 +5,5 @@
 // workspace "browser" {
 //     open-on-output "DP-1"
 // }
+
+workspace "Music"

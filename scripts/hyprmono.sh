@@ -69,6 +69,7 @@ show_help() {
     echo -e "  uninstall   Completely remove all configurations"
     echo -e "  update      Pull latest repository changes and sync"
     echo -e "  audit       Verify system dependencies"
+    echo -e "  diagnostics Read-only desktop configuration and runtime snapshot"
     echo -e "  migrate     Scan duplicate shell components; --rollback DIR restores backups"
     echo -e "  settings    Open Caffyne Shell quick settings"
     echo -e "  performance Measure Niri and Caffyne Shell CPU/RAM; compare a baseline"
@@ -119,6 +120,9 @@ case "${1:-help}" in
             err "Audit failed: missing components: ${missing[*]}"
             exit 1
         fi
+        ;;
+    diagnostics)
+        run_repo_script desktop-diagnostics.sh "${@:2}"
         ;;
     migrate)
         run_repo_script migrate.sh "${@:2}"
