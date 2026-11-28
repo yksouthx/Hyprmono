@@ -6,26 +6,26 @@ REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly REPO_ROOT
 TEMP_DIR="$(mktemp -d)"
 readonly TEMP_DIR
-hyprland_pid=""
+niri_pid=""
 caffyne_pid=""
 
 cleanup() {
-    [[ -z "$hyprland_pid" ]] || kill "$hyprland_pid" 2>/dev/null || true
+    [[ -z "$niri_pid" ]] || kill "$niri_pid" 2>/dev/null || true
     [[ -z "$caffyne_pid" ]] || kill "$caffyne_pid" 2>/dev/null || true
-    [[ -z "$hyprland_pid" ]] || wait "$hyprland_pid" 2>/dev/null || true
+    [[ -z "$niri_pid" ]] || wait "$niri_pid" 2>/dev/null || true
     [[ -z "$caffyne_pid" ]] || wait "$caffyne_pid" 2>/dev/null || true
     rm -rf -- "$TEMP_DIR"
 }
 trap cleanup EXIT
 
-bash -c 'exec -a Hyprland bash -c "while :; do :; done"' &
-hyprland_pid=$!
+bash -c 'exec -a niri bash -c "while :; do :; done"' &
+niri_pid=$!
 bash -c 'exec -a caffyne-shell bash -c "while :; do :; done"' &
 caffyne_pid=$!
 
 XDG_STATE_HOME="$TEMP_DIR/state" bash "$REPO_ROOT/scripts/performance.sh" \
     --seconds 1 --record > "$TEMP_DIR/record.out"
-grep -q '^Hyprland:.*CPU.*resident memory' "$TEMP_DIR/record.out"
+grep -q '^Niri:.*CPU.*resident memory' "$TEMP_DIR/record.out"
 grep -q '^Caffyne Shell:.*CPU.*resident memory' "$TEMP_DIR/record.out"
 test -s "$TEMP_DIR/state/Hyprmono/performance-baseline.tsv"
 

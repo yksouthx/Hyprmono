@@ -10,7 +10,7 @@ LOG_DIR="$HOME/.cache/Hyprmono"
 SNAPSHOT_DIR=""
 TEST_LOG=""
 ROLLBACK_NEEDED=0
-HYPRLAND_RELOADED=0
+NIRI_RELOADED=0
 declare -a NEW_DIRECTORIES=()
 declare -a CONFIG_TARGETS=()
 declare -a SNAPSHOT_PATHS=()
@@ -20,11 +20,11 @@ usage() {
 Usage: ./test_install.sh
 
 Deploy HyprMono's minimal configuration without installing packages, migrating
-the repository, or cleaning other desktop components. Then reload Hyprland,
-check its configuration errors, and smoke-test Caffyne Shell. Any failure restores
-the exact pre-test files and reloads the restored Hyprland configuration.
+the repository, or cleaning other desktop components. Then reload Niri and
+smoke-test Caffyne Shell. Any failure restores the exact pre-test files and
+reloads the restored Niri configuration.
 
-Requires an active Hyprland Wayland session and an installed Caffyne Shell.
+Requires an active Niri Wayland session and an installed Caffyne Shell.
 Test output is written to a new, private log file on your Desktop.
 EOF
 }
@@ -60,7 +60,7 @@ collect_config_targets() {
         [[ -d "$dir" ]] || continue
         name=$(basename "${dir%/}")
         case "$name" in
-            Hyprland) CONFIG_TARGETS+=(hypr) ;;
+            Niri) CONFIG_TARGETS+=(niri) ;;
             fastfetch) ;;
             *) CONFIG_TARGETS+=("$name") ;;
         esac
@@ -192,9 +192,9 @@ restore_snapshot() {
         say_error "could not remove the backup created by this test"
         failed=1
     fi
-    if (( HYPRLAND_RELOADED )) && command -v hyprctl >/dev/null 2>&1; then
-        if ! hyprctl reload; then
-            say_error "restored files, but Hyprland could not reload its previous configuration"
+    if (( NIRI_RELOADED )) && command -v niri >/dev/null 2>&1; then
+        if ! niri msg action load-config-file; then
+            say_error "restored files, but Niri could not reload its previous configuration"
             failed=1
         fi
     fi
@@ -230,29 +230,12 @@ on_exit() {
 }
 trap on_exit EXIT
 
-check_hyprland() {
-    local errors normalized
-    HYPRLAND_RELOADED=1
-    if ! hyprctl reload; then
-        fail "Hyprland reload failed."
+check_niri() {
+    NIRI_RELOADED=1
+    if ! niri msg action load-config-file; then
+        fail "Niri failed to load the deployed configuration."
     fi
-    if ! errors=$(hyprctl configerrors 2>&1); then
-        printf '%s\n' "$errors" >&2
-        fail "could not query Hyprland configuration errors."
-    fi
-    normalized="${errors,,}"
-    if [[ "$normalized" == *"no config errors"* \
-        || "$normalized" == *"no configuration errors"* \
-        || "$normalized" == *"no errors"* \
-        || "$normalized" == *"0 errors"* ]]; then
-        printf 'Hyprland configuration check passed.\n'
-    elif [[ "$normalized" == *"error"* || "$normalized" == *"invalid"* \
-        || "$normalized" == *"failed"* ]]; then
-        printf '%s\n' "$errors" >&2
-        fail "Hyprland reported configuration errors."
-    else
-        printf 'Hyprland configuration check passed.\n'
-    fi
+    printf 'Niri configuration reload passed.\n'
 }
 
 check_caffyne_shell() {
@@ -298,11 +281,11 @@ main() {
     }
     (( EUID != 0 )) || fail "do not run this script as root."
     [[ -n "${WAYLAND_DISPLAY:-}" ]] || fail "no Wayland session detected."
-    command -v hyprctl >/dev/null 2>&1 || fail "hyprctl is not installed."
+    command -v niri >/dev/null 2>&1 || fail "niri is not installed."
     command -v timeout >/dev/null 2>&1 || fail "timeout is required."
     [[ -x "$CONFIG_DIR/caffyne-shell/start.sh" || -r "$CONFIG_DIR/caffyne-shell/main.py" ]] ||
         fail "Caffyne Shell is not installed."
-    hyprctl -j monitors >/dev/null 2>&1 || fail "could not connect to the active Hyprland instance."
+    niri msg outputs >/dev/null 2>&1 || fail "could not connect to the active Niri instance."
 
     take_snapshot
     ROLLBACK_NEEDED=1
@@ -313,7 +296,7 @@ main() {
         fail "installer failed."
     fi
 
-    check_hyprland
+    check_niri
     check_caffyne_shell
 
     ROLLBACK_NEEDED=0

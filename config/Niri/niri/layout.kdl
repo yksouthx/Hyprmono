@@ -1,0 +1,32 @@
+layout {
+    gaps 10
+    center-focused-column "on-overflow"
+    always-center-single-column
+
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+        proportion 1.0
+    }
+
+    default-column-width { proportion 0.5; }
+
+    focus-ring {
+        width 2
+        active-color "#D8D8D8"
+        inactive-color "#383838"
+    }
+
+    border {
+        off
+        width 1
+        active-color "#CCCCCC"
+        inactive-color "#444444"
+    }
+
+    shadow {
+        off
+    }
+
+}

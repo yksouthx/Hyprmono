@@ -15,7 +15,7 @@ By participating in this project, you are expected to uphold our Code of Conduct
 
 ### Reporting Bugs
 - Check the [Issues](https://github.com/s0uth09/Hyprmono/issues) to see if the bug has already been reported.
-- If not, open a new issue. Clearly describe the problem, including steps to reproduce it and your system environment (especially your Hyprland version).
+- If not, open a new issue. Clearly describe the problem, including steps to reproduce it and your system environment (especially your Niri version).
 
 ### Suggesting Enhancements
 - Open an issue to discuss your idea before putting in the work.
@@ -33,6 +33,7 @@ By participating in this project, you are expected to uphold our Code of Conduct
 ### Configuration Format
 - Maintain the **monochrome aesthetic**. No colors outside the established grayscale palette.
 - Keep configurations **modular**. If a section becomes too large, split it into a separate file in the appropriate subdirectory.
+- The supported compositor configuration is Niri KDL under `config/Niri/niri/`.
 - Use **descriptive comments** to explain what specific settings do.
 
 ### Scripting

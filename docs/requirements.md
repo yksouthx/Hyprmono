@@ -33,12 +33,12 @@ For optimal performance, smooth animations, and heavy multitasking.
 The installation script (`install.sh`) will attempt to install these automatically via `pacman`.
 
 ### Core Packages
-- `hyprland`: The tiling compositor.
+- `niri`: The scrollable-tiling Wayland compositor.
 - `caffyne-shell`: GTK/Fabric desktop shell runtime, installed from GitHub.
 - `cava`: Audio visualizer for the bar music element.
 - `kitty`: Terminal emulator.
-- `hyprlock`: Screen locker.
-- `hypridle`: Idle management daemon.
+- `swaylock`: Screen locker.
+- `swayidle`: Idle management daemon when Caffyne Shell is unavailable.
 - `calm-shell`: Preferred interactive terminal shell, built by the installer from `https://github.com/yksouthx/calm-shell.git`.
 
 ### Shell and optional packages
@@ -58,7 +58,7 @@ Fish is not part of the project configuration.
 - `pipewire` / `wireplumber`: Audio backend.
 - `brightnessctl` / `playerctl`: Hardware controls.
 - `polkit-kde-agent`: Authentication agent.
-- `xdg-desktop-portal-hyprland`: Wayland portal.
+- `xdg-desktop-portal-gnome` and `xdg-desktop-portal-gtk`: Wayland portals.
 - `cmake`, `ninja`, `gcc`, and `git`: Build and source prerequisites for Calm-shell.
 
 Use `./install.sh --dry-run` to preview the system scan and deployment plan.
@@ -87,7 +87,7 @@ config directories. The installer creates a timestamped backup before wiping.
 - **NVIDIA Users:** Ensure you have the latest proprietary drivers (`nvidia` or `nvidia-open-dkms`) and have enabled DRM kernel mode setting.
 - **Laptops:** Battery and brightness controls are available from Caffyne Shell's quick settings applets.
 - **Wallpaper formats:** The shell wallpaper (`assets/wall.webp`) needs `qt6-imageformats`, which the installer includes.
-- **Multi-Monitor:** Hyprland handles multi-monitor setups natively; add a monitor rule in `config/Hyprland/hypr/hyprland.lua` to customize your layout.
+- **Multi-Monitor:** Niri automatically detects connected outputs. Add output-specific mode, scale, transform, or position rules in `config/Niri/niri/monitors.kdl`.
 
 ## Caffyne Shell
 

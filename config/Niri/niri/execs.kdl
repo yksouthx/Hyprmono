@@ -1,0 +1,4 @@
+spawn-at-startup "sh" "-c" "mkdir -p \"$HOME/Pictures/NiriMono\""
+spawn-at-startup "bash" "-lc" "$HOME/.local/bin/start-session-services.sh"
+spawn-at-startup "bash" "-lc" "$HOME/.local/bin/start-idle.sh"
+spawn-at-startup "bash" "-lc" "$HOME/.local/bin/start-shell.sh"

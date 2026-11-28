@@ -70,9 +70,8 @@ show_help() {
     echo -e "  update      Pull latest repository changes and sync"
     echo -e "  audit       Verify system dependencies"
     echo -e "  migrate     Scan duplicate shell components; --rollback DIR restores backups"
-    echo -e "  profile     Show or switch between low-resource, balanced, and full-visual modes"
     echo -e "  settings    Open Caffyne Shell quick settings"
-    echo -e "  performance Measure Hyprland and Caffyne Shell CPU/RAM; compare a baseline"
+    echo -e "  performance Measure Niri and Caffyne Shell CPU/RAM; compare a baseline"
     echo -e "  emoji       Pick and copy an emoji with Fuzzel"
     echo -e "  help        Display this help interface"
     echo
@@ -106,7 +105,8 @@ case "${1:-help}" in
     audit)
         log "Running System Audit..."
         missing=()
-        for bin in Hyprland hypridle hyprlock kitty wpctl brightnessctl playerctl wl-copy fuzzel fnott; do
+        bins=(niri swayidle swaylock kitty wpctl brightnessctl playerctl wl-copy fuzzel fnott)
+        for bin in "${bins[@]}"; do
             command -v "$bin" >/dev/null 2>&1 || missing+=("$bin")
         done
         if [[ ! -x "${XDG_CONFIG_HOME:-$HOME/.config}/caffyne-shell/start.sh" ]] &&
@@ -122,9 +122,6 @@ case "${1:-help}" in
         ;;
     migrate)
         run_repo_script migrate.sh "${@:2}"
-        ;;
-    profile)
-        run_repo_script profile.sh "${@:2}"
         ;;
     settings)
         fabric-cli exec caffyne-shell "bar_manager.toggle('Settings')" 2>/dev/null ||

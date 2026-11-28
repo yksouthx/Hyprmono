@@ -6,6 +6,24 @@ Notable changes to HyprMono are documented here.
 
 ### Changed
 
+- Replaced the shipped Hyprland compositor, lock, idle and portal configs with
+  Niri KDL, made Niri the sole installed compositor, and updated its session
+  helpers, installer, documentation and tests.
+- Removed the Hyprland-only visual-profile control; Niri does not use those
+  profile settings.
+
+- Removed Hyprland-specific cursor-theme settings and layout references from
+  the NiriMono config, leaving cursor selection to the system XCursor theme.
+
+- Refined the Niri layout and focus defaults, and added a subtle gloss/highlight
+  treatment to the Caffyne bar and Fuzzel launcher.
+
+- Rebuilt the NiriMono setup as modular KDL files for environment, input, layout,
+  monitors, workspaces, rules, startup, animations and keybinds; configured a
+  dedicated timestamped screenshot path.
+- Refined Niri desktop integration with Wayland portals, overview controls,
+  workspace mouse-wheel bindings and monitor-specific configuration examples.
+
 - Replaced Quickshell with Caffyne Shell and rebuilt the bar's active-window,
   process/CPU, RAM, media/CAVA, wallpaper, quick-settings and emoji integrations
   on Fabric/GTK.
@@ -49,6 +67,10 @@ Notable changes to HyprMono are documented here.
 - Kitty config: removed an inline comment kitty does not support.
 
 ### Added
+
+- Added an optional custom HyprMono SDDM theme with a grayscale wallpaper,
+  session selector, clock, power actions, Wayland greeter configuration,
+  installation backup/restore support and uninstall cleanup.
 
 - Added `./test_install.sh` to test a minimal deployment in the active
   Hyprland/Quickshell session and automatically restore pre-test files if

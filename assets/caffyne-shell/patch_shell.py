@@ -33,39 +33,6 @@ if "RAMIndicatorButton" not in text:
     )
 bar_file.write_text(text)
 
-profile_file = root / "windows" / "quick_settings" / "buttons" / "profile.py"
-profile_file.write_text((Path(os.environ["OVERRIDE_DIR"]) / "profile.py").read_text())
-
-profile_init = root / "windows" / "quick_settings" / "buttons" / "__init__.py"
-text = profile_init.read_text()
-if "VisualProfileButton" not in text:
-    text = text.replace(
-        "from .settings import SettingsButton\n",
-        "from .settings import SettingsButton\nfrom .profile import VisualProfileButton\n",
-    )
-    text = text.replace(
-        '    "SettingsButton"\n',
-        '    "SettingsButton",\n    "VisualProfileButton"\n',
-    )
-profile_init.write_text(text)
-
-quick_settings_file = root / "windows" / "quick_settings" / "quick_settings.py"
-text = quick_settings_file.read_text()
-if "VisualProfileButton" not in text:
-    text = text.replace(
-        "from .buttons import",
-        "from .buttons import",
-    )
-    text = text.replace(
-        "CaffieneButton, PowerModes",
-        "CaffieneButton, PowerModes, VisualProfileButton",
-    )
-    text = text.replace(
-        "                                    CaffieneButton(),",
-        "                                    CaffieneButton(),\n                                    VisualProfileButton(),",
-    )
-quick_settings_file.write_text(text)
-
 config_file = root / "config" / "config.json"
 wallpaper = root / "wallpapers" / "hyprmono.webp"
 if config_file.is_file():

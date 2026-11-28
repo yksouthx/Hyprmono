@@ -19,22 +19,18 @@ BASE_PATH="/usr/bin:/bin"
 export CALLS="$TEMP_DIR/calls"
 
 # ---------- lock-screen.sh ----------
-bin="$TEMP_DIR/lock-hyprlock"
-stub "$bin" hyprlock
+bin="$TEMP_DIR/lock-swaylock"
+stub "$bin" swaylock
+printf '#!/bin/sh\nexit 1\n' > "$bin/pgrep"
+chmod +x "$bin/pgrep"
 : > "$CALLS"
 PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-screen.sh"
-grep -q '^hyprlock' "$CALLS"
-
-bin="$TEMP_DIR/lock-with-config"
-stub "$bin" hyprlock
-: > "$CALLS"
-PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-screen.sh" || true
-grep -q '^hyprlock' "$CALLS"
+grep -q '^swaylock -f --color 080808' "$CALLS"
 
 bin="$TEMP_DIR/lock-nothing"
 mkdir -p "$bin"
 if PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-screen.sh" 2>/dev/null; then
-    echo "lock-screen.sh must fail when hyprlock is missing" >&2
+    echo "lock-screen.sh must fail when swaylock is missing" >&2
     exit 1
 fi
 

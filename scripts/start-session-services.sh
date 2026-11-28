@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start the small session helpers that neither Hyprland nor Caffyne Shell provide:
+# Start the small session helpers that neither Niri nor Caffyne Shell provide:
 #   - a polkit authentication agent, so GUI privilege prompts work
 #   - fnott, the notification daemon (project shell only)
 # - nm-applet, whose menu is shown from the bar's system tray

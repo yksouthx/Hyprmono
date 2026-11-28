@@ -245,12 +245,13 @@ resolve_repo_root() {
 PACMAN_PACKAGES=(
     qt6-imageformats fuzzel fnott network-manager-applet
     git
-    hyprland hyprlock hypridle kitty
+    niri swayidle swaylock sddm kitty
     gtk3 cairo libgirepository gobject-introspection gtk-layer-shell
     libdbusmenu-gtk3 cinnamon-desktop gnome-bluetooth-3.0 gtk-session-lock
-    matugen playerctl brightnessctl wf-recorder upower swayidle cava
+    matugen playerctl brightnessctl wf-recorder upower cava
     networkmanager bluez python python-pip awww base-devel
-    xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
+    xdg-desktop-portal-gnome xdg-desktop-portal-gtk
+    xdg-desktop-portal-wlr gnome-keyring xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     brightnessctl playerctl wireplumber pipewire-pulse wl-clipboard
 )
@@ -314,9 +315,9 @@ collect_config_deployments() {
     for folder_path in "$source_config"/*/; do
         folder_name=$(basename "${folder_path%/}")
         case "$folder_name" in
-            Hyprland)
-                CONFIG_SOURCES+=("$folder_path/hypr")
-                CONFIG_TARGETS+=(hypr)
+            Niri)
+                CONFIG_SOURCES+=("$folder_path/niri")
+                CONFIG_TARGETS+=(niri)
                 ;;
             installer)
                 # The installer window runs from the repository; it is not a user config.
@@ -437,7 +438,7 @@ run_environment_tests() {
     fi
 
     if [[ -d "$REPO_ROOT/config" &&
-        -f "$REPO_ROOT/config/Hyprland/hypr/hyprland.lua" &&
+        -f "$REPO_ROOT/config/Niri/niri/config.kdl" &&
         -f "$REPO_ROOT/scripts/install-caffyne-shell.sh" &&
         -f "$REPO_ROOT/scripts/migrate.sh" ]]; then
         ok "Required repository files are present"
@@ -595,6 +596,73 @@ backup_local_bin_entry() {
 }
 
 # --- Core Installation ---
+install_sddm_theme() {
+    if [[ "$SKIP_DEPS" -eq 1 || "$SKIP_PKGS" -eq 1 ]]; then
+        info "Skipping SDDM setup because dependency installation is disabled."
+        return 0
+    fi
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "Dry run: would install the HyprMono SDDM theme and enable sddm.service."
+        return 0
+    fi
+
+    local theme_source="$REPO_ROOT/assets/sddm/hyprmono"
+    if [[ ! -d "$theme_source" ]]; then
+        warn "HyprMono SDDM theme assets are missing; skipping display-manager setup."
+        return 0
+    fi
+    if ! ask "Install and configure the custom HyprMono SDDM login screen?" y; then
+        warn "Custom SDDM login screen skipped."
+        return 0
+    fi
+
+    if ! has sudo; then
+        warn "sudo is unavailable; skipping custom SDDM login screen."
+        return 0
+    fi
+
+    local backup_root="$HOME/.cache/Hyprmono"
+    local original_theme="$backup_root/sddm-original-theme"
+    local original_conf="$backup_root/sddm-original.conf"
+
+    if [[ -d /usr/share/sddm/themes/hyprmono ]] && [[ ! -e "$original_theme" ]]; then
+        sudo mkdir -p "$backup_root"
+        sudo cp -a /usr/share/sddm/themes/hyprmono "$original_theme"
+    fi
+    if [[ -f /etc/sddm.conf.d/10-hyprmono.conf ]] && [[ ! -e "$original_conf" ]]; then
+        sudo mkdir -p "$backup_root"
+        sudo cp -a /etc/sddm.conf.d/10-hyprmono.conf "$original_conf"
+    fi
+
+    sudo mkdir -p /usr/share/sddm/themes/hyprmono
+    sudo cp -rf "$theme_source/." /usr/share/sddm/themes/hyprmono/
+    sudo chmod 0755 /usr/share/sddm/themes/hyprmono
+    sudo chmod 0644 /usr/share/sddm/themes/hyprmono/*.conf /usr/share/sddm/themes/hyprmono/*.desktop \
+        /usr/share/sddm/themes/hyprmono/*.qml 2>/dev/null || true
+
+    local temporary_conf
+    temporary_conf=$(mktemp)
+    cat > "$temporary_conf" <<'EOF'
+[General]
+DisplayServer=wayland
+GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+
+[Theme]
+Current=hyprmono
+EOF
+    sudo mkdir -p /etc/sddm.conf.d
+    sudo install -o root -g root -m 0644 "$temporary_conf" /etc/sddm.conf.d/10-hyprmono.conf
+    rm -f -- "$temporary_conf"
+
+    if sudo systemctl enable sddm.service &>>"$LOGFILE"; then
+        mkdir -p "$backup_root"
+        touch "$backup_root/sddm-managed"
+        ok "HyprMono SDDM theme installed and sddm.service enabled."
+    else
+        warn "SDDM theme installed, but sddm.service could not be enabled."
+    fi
+}
+
 install_configs() {
     title "Configuration Deployment"
 
@@ -630,6 +698,15 @@ install_configs() {
     fi
     record_original_backup "$backup_dir"
 
+    local deployed_targets_file="$LOGDIR/deployed-targets"
+    if [[ -s "$deployed_targets_file" ]] &&
+        grep -qxF 'hypr' "$deployed_targets_file" &&
+        [[ -e "$CONFIG_DIR/hypr" || -L "$CONFIG_DIR/hypr" ]]; then
+        \cp -a "$CONFIG_DIR/hypr" "$backup_dir/"
+        rm -rf -- "${CONFIG_DIR:?}/hypr"
+        info "Removed the previous managed Hyprland config; its backup is at $backup_dir/hypr"
+    fi
+
     local index
     for index in "${!CONFIG_SOURCES[@]}"; do
         folder_path="${CONFIG_SOURCES[$index]%/}"
@@ -660,12 +737,10 @@ install_configs() {
             rm -f -- "$dest"
         fi
 
-        # hypr/custom/*.lua are the user's personal overrides: never clobber them
-        # with the empty stubs from the repo, not even in --wipe mode.
         local preserved_custom=""
-        if [[ "$target_name" == hypr && -d "$dest/custom" ]]; then
-            preserved_custom=$(mktemp -d)
-            \cp -a "$dest/custom/." "$preserved_custom/"
+        if [[ "$target_name" == niri && -f "$dest/custom.kdl" ]]; then
+            preserved_custom=$(mktemp)
+            \cp -a "$dest/custom.kdl" "$preserved_custom"
         fi
 
         if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
@@ -681,21 +756,15 @@ install_configs() {
         done
 
         if [[ -n "$preserved_custom" ]]; then
-            mkdir -p "$dest/custom"
-            \cp -a "$preserved_custom/." "$dest/custom/"
-            rm -rf -- "$preserved_custom"
-            info "Preserved your hypr/custom overrides"
+            \cp -a "$preserved_custom" "$dest/custom.kdl"
+            rm -f -- "$preserved_custom"
+            info "Preserved your niri/custom.kdl overrides"
         fi
         log "Deployed $folder_name"
 
         deployed+=("$target_name")
         progress "$count" "$total"
     done
-
-    # Scripts that Hyprland tools execute directly must carry the exec bit.
-    if [[ -d "$CONFIG_DIR/hypr/hyprlock" ]]; then
-        find "$CONFIG_DIR/hypr/hyprlock" -type f -name '*.sh' -exec chmod +x {} +
-    fi
 
     # Record what was deployed so uninstall removes exactly these directories.
     mkdir -p "$LOGDIR"
@@ -719,6 +788,11 @@ install_configs() {
     # Deploy scripts to ~/.local/bin
     title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
+    if [[ -e "$LOCAL_BIN/profile.sh" || -L "$LOCAL_BIN/profile.sh" ]]; then
+        backup_local_bin_entry "profile.sh" "$backup_dir"
+        rm -f -- "$LOCAL_BIN/profile.sh"
+        info "Removed the retired compositor profile helper."
+    fi
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
         # Include tools from earlier releases so a wipe removes stale copies.
         local managed_script
@@ -763,13 +837,6 @@ install_configs() {
     # Deploy assets
     title "Asset Deployment"
     if [[ -d "$REPO_ROOT/assets" ]]; then
-        if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
-            rm -rf -- "$CONFIG_DIR/hypr/assets"
-        fi
-        mkdir -p "$CONFIG_DIR/hypr/assets"
-        \cp -rf "$REPO_ROOT/assets/"* "$CONFIG_DIR/hypr/assets/"
-        ok "Deployed assets to $CONFIG_DIR/hypr/assets"
-
         if [[ -d "$REPO_ROOT/assets/fonts" ]]; then
             info "Updating font cache..."
             mkdir -p "$HOME/.local/share/fonts"
@@ -838,14 +905,14 @@ validate_installation() {
         return 0
     fi
 
-    if [[ -f "$CONFIG_DIR/hypr/hyprland.lua" ]]; then
-        ok "Hyprland configuration is present."
+    if [[ -f "$CONFIG_DIR/niri/config.kdl" ]]; then
+        ok "Niri configuration is present."
     else
-        warn "Hyprland configuration is missing; configuration deployment may have been skipped."
+        warn "Niri configuration is missing; configuration deployment may have been skipped."
     fi
 
     local script
-    for script in start-shell.sh start-idle.sh start-session-services.sh lock-screen.sh launch-menu.sh migrate.sh performance.sh profile.sh; do
+    for script in start-shell.sh start-idle.sh start-session-services.sh lock-screen.sh launch-menu.sh migrate.sh performance.sh; do
         if [[ -x "$LOCAL_BIN/$script" ]]; then
             ok "Runtime helper is installed: $script"
         else
@@ -1122,6 +1189,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     fi
     if ask "Proceed with configuration deployment?" y; then
         install_configs
+        install_sddm_theme
         install_calm_shell
     fi
 
@@ -1148,7 +1216,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     echo
 
     echo -e "${BOLD}${WHITE}Next${RESET}"
-    echo "  reboot (or reload Hyprland)"
+    echo "  log out and select Niri (or reboot)"
     echo "  calm"
     echo "  start-shell.sh (launches Caffyne Shell)"
     if [[ "$DRY_RUN" -eq 1 ]]; then

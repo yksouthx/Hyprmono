@@ -12,7 +12,7 @@ usage() {
     cat <<'EOF'
 Usage: hyprmono performance [OPTIONS]
 
-Measure average CPU use and resident memory for running Hyprland and Caffyne Shell
+Measure average CPU use and resident memory for running Niri and Caffyne Shell
 processes. CPU is reported as a percentage of one logical CPU.
 
 Options:
@@ -41,14 +41,14 @@ process_group() {
     [[ -r "/proc/$pid/comm" ]] || return 1
     IFS= read -r comm < "/proc/$pid/comm" || return 1
     case "$comm" in
-        Hyprland) printf '%s\n' hyprland; return 0 ;;
+        niri) printf '%s\n' niri; return 0 ;;
         python3|python) ;;
     esac
 
     [[ -r "/proc/$pid/cmdline" ]] || return 1
     IFS= read -r -d '' first_arg < "/proc/$pid/cmdline" || true
-    if [[ "${first_arg##*/}" == Hyprland ]]; then
-        printf '%s\n' hyprland
+    if [[ "${first_arg##*/}" == niri ]]; then
+        printf '%s\n' niri
         return 0
     fi
 
@@ -122,21 +122,21 @@ metric_regressed() {
         }'
 }
 
-# shellcheck disable=SC2154  # hyprland_*/caffyne_* are set via printf -v
+# shellcheck disable=SC2154  # niri_*/caffyne_* are set via printf -v
 compare_baseline() {
-    local recorded_at recorded_duration base_hypr_cpu base_hypr_memory base_caffyne_cpu base_caffyne_memory
+    local recorded_at recorded_duration base_niri_cpu base_niri_memory base_caffyne_cpu base_caffyne_memory
     [[ -r "$BASELINE_FILE" ]] || {
         printf 'Performance baseline not found: %s\n' "$BASELINE_FILE" >&2
         printf 'Record one with: hyprmono performance --record\n' >&2
         return 1
     }
 
-    IFS=$'\t' read -r recorded_at recorded_duration base_hypr_cpu base_hypr_memory base_caffyne_cpu base_caffyne_memory \
+    IFS=$'\t' read -r recorded_at recorded_duration base_niri_cpu base_niri_memory base_caffyne_cpu base_caffyne_memory \
         < "$BASELINE_FILE"
     [[ "$recorded_at" =~ ^[0-9T:+-]+$ &&
        "$recorded_duration" =~ ^[0-9]+$ &&
-       "$base_hypr_cpu" =~ ^[0-9]+([.][0-9]+)?$ &&
-       "$base_hypr_memory" =~ ^[0-9]+([.][0-9]+)?$ &&
+       "$base_niri_cpu" =~ ^[0-9]+([.][0-9]+)?$ &&
+       "$base_niri_memory" =~ ^[0-9]+([.][0-9]+)?$ &&
        "$base_caffyne_cpu" =~ ^[0-9]+([.][0-9]+)?$ &&
        "$base_caffyne_memory" =~ ^[0-9]+([.][0-9]+)?$ ]] || {
         printf 'Invalid performance baseline file: %s\n' "$BASELINE_FILE" >&2
@@ -144,16 +144,16 @@ compare_baseline() {
     }
 
     printf '\nComparison with baseline recorded %s (%s-second sample):\n' "$recorded_at" "$recorded_duration"
-    printf '  Hyprland CPU:   %s%% baseline, %s%% current\n' "$base_hypr_cpu" "$hyprland_cpu"
-    printf '  Hyprland RAM:   %s MiB baseline, %s MiB current\n' "$base_hypr_memory" "$hyprland_memory"
+    printf '  Niri CPU:   %s%% baseline, %s%% current\n' "$base_niri_cpu" "$niri_cpu"
+    printf '  Niri RAM:   %s MiB baseline, %s MiB current\n' "$base_niri_memory" "$niri_memory"
     printf '  Caffyne Shell CPU: %s%% baseline, %s%% current\n' "$base_caffyne_cpu" "$caffyne_cpu"
     printf '  Caffyne Shell RAM: %s MiB baseline, %s MiB current\n' "$base_caffyne_memory" "$caffyne_memory"
 
     if [[ -n "$MAX_REGRESSION" ]]; then
         local regression=0 metric
         for metric in \
-            "$hyprland_cpu:$base_hypr_cpu" \
-            "$hyprland_memory:$base_hypr_memory" \
+            "$niri_cpu:$base_niri_cpu" \
+            "$niri_memory:$base_niri_memory" \
             "$caffyne_cpu:$base_caffyne_cpu" \
             "$caffyne_memory:$base_caffyne_memory"; do
             if metric_regressed "${metric%%:*}" "${metric#*:}" "$MAX_REGRESSION"; then
@@ -168,7 +168,7 @@ compare_baseline() {
     fi
 }
 
-# shellcheck disable=SC2154  # hyprland_*/caffyne_* are set via printf -v
+# shellcheck disable=SC2154  # niri_*/caffyne_* are set via printf -v
 main() {
     while (( $# > 0 )); do
         case "$1" in
@@ -219,21 +219,21 @@ main() {
         exit 1
     }
 
-    local -A before_hyprland=() before_caffyne=()
-    snapshot_group hyprland before_hyprland
+    local -A before_niri=() before_caffyne=()
+    snapshot_group niri before_niri
     snapshot_group caffyne before_caffyne
-    if (( ${#before_hyprland[@]} == 0 && ${#before_caffyne[@]} == 0 )); then
-        printf 'No Hyprland or Caffyne Shell process is running; start the desktop before sampling.\n' >&2
+    if (( ${#before_niri[@]} == 0 && ${#before_caffyne[@]} == 0 )); then
+        printf 'No Niri or Caffyne Shell process is running; start the desktop before sampling.\n' >&2
         exit 1
     fi
 
-    printf 'Sampling Hyprland and Caffyne Shell for %s seconds…\n' "$DURATION"
+    printf 'Sampling Niri and Caffyne Shell for %s seconds…\n' "$DURATION"
     sleep "$DURATION"
-    current_group_usage hyprland before_hyprland
+    current_group_usage niri before_niri
     current_group_usage caffyne before_caffyne
 
-    printf 'Hyprland:   %s%% CPU, %s MiB resident memory (%s processes)\n' \
-        "$hyprland_cpu" "$hyprland_memory" "$hyprland_count"
+    printf 'Niri:   %s%% CPU, %s MiB resident memory (%s processes)\n' \
+        "$niri_cpu" "$niri_memory" "$niri_count"
     printf 'Caffyne Shell: %s%% CPU, %s MiB resident memory (%s processes)\n' \
         "$caffyne_cpu" "$caffyne_memory" "$caffyne_count"
 
@@ -243,7 +243,7 @@ main() {
         temporary_file=$(mktemp "${BASELINE_FILE}.XXXXXX")
         printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$(date --iso-8601=seconds)" "$DURATION" \
-            "$hyprland_cpu" "$hyprland_memory" "$caffyne_cpu" "$caffyne_memory" > "$temporary_file"
+            "$niri_cpu" "$niri_memory" "$caffyne_cpu" "$caffyne_memory" > "$temporary_file"
         mv -f -- "$temporary_file" "$BASELINE_FILE"
         printf 'Saved performance baseline to %s\n' "$BASELINE_FILE"
     fi

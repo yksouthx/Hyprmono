@@ -1,0 +1,10 @@
+[SddmGreeterTheme]
+Name=HyprMono
+Description=A dark monochrome SDDM greeter for HyprMono
+Author=HyprMono
+License=GPL-3.0
+Type=sddm-theme
+MainScript=Main.qml
+Theme-Id=hyprmono
+Theme-API=2.0
+ConfigFile=theme.conf

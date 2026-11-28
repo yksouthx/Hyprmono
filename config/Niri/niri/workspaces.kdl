@@ -1,0 +1,7 @@
+// Workspaces are indexed 1-9 by the keybind module.
+// Add named workspaces or output-specific assignments here.
+//
+// Example:
+// workspace "browser" {
+//     open-on-output "DP-1"
+// }
