@@ -86,6 +86,7 @@ config directories. The installer creates a timestamped backup before wiping.
 
 - **NVIDIA Users:** Ensure you have the latest proprietary drivers (`nvidia` or `nvidia-open-dkms`) and have enabled DRM kernel mode setting.
 - **Laptops:** Battery and brightness controls are available from the Caelestia fallback; the project-owned quick settings currently provides audio output control.
+- **Wallpaper formats:** The shell wallpaper (`assets/wall.webp`) needs `qt6-imageformats`, which the installer includes.
 - **Multi-Monitor:** Hyprland handles multi-monitor setups natively; add a monitor rule in `config/Hyprland/hypr/hyprland.lua` to customize your layout.
 
 ## Quickshell bar and Caelestia fallback

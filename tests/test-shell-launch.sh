@@ -2,8 +2,10 @@
 
 set -Eeuo pipefail
 
-readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly TEMP_DIR="$(mktemp -d)"
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT
+TEMP_DIR="$(mktemp -d)"
+readonly TEMP_DIR
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
 mkdir -p "$TEMP_DIR/bin" "$TEMP_DIR/config/hyprmono"
@@ -23,7 +25,7 @@ HOME="$TEMP_DIR" \
 XDG_CONFIG_HOME="$TEMP_DIR/config" \
 PATH="$TEMP_DIR/bin:$PATH" \
 CAPTURE="$TEMP_DIR/launch.out" \
-    bash "$REPO_ROOT/scripts/start-caelestia.sh"
+    bash "$REPO_ROOT/scripts/start-shell.sh"
 
 [[ "$(sed -n '1p' "$TEMP_DIR/launch.out")" == "-n" ]]
 [[ "$(sed -n '2p' "$TEMP_DIR/launch.out")" == "-p" ]]
@@ -35,7 +37,7 @@ HOME="$TEMP_DIR" \
 XDG_CONFIG_HOME="$TEMP_DIR/config" \
 PATH="$TEMP_DIR/bin:$PATH" \
 CAPTURE="$TEMP_DIR/fallback.out" \
-    bash "$REPO_ROOT/scripts/start-caelestia.sh"
+    bash "$REPO_ROOT/scripts/start-shell.sh"
 grep -q '^caelestia shell -d$' "$TEMP_DIR/fallback.out"
 
 printf 'Quickshell startup and Caelestia fallback passed.\n'

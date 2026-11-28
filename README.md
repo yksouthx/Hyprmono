@@ -71,10 +71,13 @@ cd Hyprmono
 ./install.sh
 ```
 
-The installer checks the distribution and available hardware, scans known
-duplicate shell configs under `~/.config`, `~/.local/share` and
-`~/.local/bin`, and checks installed packages for reverse dependencies. It
-shows each candidate and asks separately before removing it. Selected files
+The installer checks the distribution and available hardware, scans for known
+duplicate bars and shell frameworks (Waybar, Eww, AGS, HyprPanel) and old
+HyprMono helpers under `~/.config`, `~/.local/share` and `~/.local/bin`, and
+checks installed packages for reverse dependencies. Launchers, notification
+daemons, wallpaper tools, lock screens and tray applets are never offered for
+removal, because the HyprMono bar does not replace them. It shows each
+candidate and asks separately before removing it. Selected files
 are backed up under `~/.local/state/Hyprmono/migration-backups/`; packages are
 never removed without an explicit per-package approval. Shared packages are
 preserved. `--yes` does not approve cleanup.
@@ -103,8 +106,21 @@ packages or configuration:
 
 Existing managed configs are backed up to `~/.config-backup-<timestamp>/`
 before deployment. The minimal profile is the default. Standard adds Fastfetch; `--full-ui`
-selects extended and also adds Yazi. No profile installs duplicate bar,
-launcher or notification components.
+selects extended and also adds Yazi. No profile installs a duplicate bar.
+
+Every profile installs two small companions for the HyprMono shell, themed to
+match it (`config/fuzzel/`, `config/fnott/`):
+
+- **fuzzel** is the application launcher (`Super + R`). When Caelestia is
+  running, `Super + R` opens Caelestia's launcher instead.
+- **fnott** is the notification daemon, started with the session when the
+  HyprMono shell is installed and no other daemon already owns
+  `org.freedesktop.Notifications`.
+
+The bar's system tray supports context menus: right-click an icon for its menu
+(left-click for icons that only offer a menu), middle-click for the secondary
+action, and scroll over an icon for its scroll action. `nm-applet` is started
+with the session so Wi-Fi can be managed from the tray.
 
 To remove stale files from previous HyprMono deployments, use the explicit
 wipe mode. Existing managed directories are backed up before they are removed:
@@ -186,7 +202,7 @@ Available commands:
 - `uninstall`: Remove all HyprMono configurations.
 - `update`: Pull latest changes and sync configurations.
 - `audit`: Perform a system check for dependencies.
-- `migrate`: Review duplicate shell components and restore migration backups.
+- `migrate`: Review duplicate bar/shell components and restore migration backups.
 - `profile`: Switch `low-resource` / `balanced` / `full-visual` compositor modes.
 - `settings`: Open the graphical performance settings window.
 - `emoji`: Open the Quickshell emoji picker.

@@ -60,26 +60,6 @@ ApplicationWindow {
             }
         }
 
-        Process {
-            id: performanceSample
-
-            stdout: StdioCollector {
-                onStreamFinished: root.performanceOutput = text.trim()
-            }
-
-            stderr: StdioCollector {
-                onStreamFinished: root.performanceError = text.trim()
-            }
-
-            onExited: (exitCode, exitStatus) => {
-                root.measuring = false
-                if (exitStatus !== 0 || exitCode !== 0)
-                    root.performanceOutput = root.performanceError !== ""
-                        ? root.performanceError
-                        : "Performance sample failed with exit code " + exitCode + "."
-            }
-        }
-
         onExited: (exitCode, exitStatus) => {
             root.busy = false
             if (exitStatus === 0 && exitCode === 0) {
@@ -90,6 +70,26 @@ ApplicationWindow {
                     ? "Profile update failed: " + root.lastError
                     : "Profile update failed with exit code " + exitCode + "."
             }
+        }
+    }
+
+    Process {
+        id: performanceSample
+
+        stdout: StdioCollector {
+            onStreamFinished: root.performanceOutput = text.trim()
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: root.performanceError = text.trim()
+        }
+
+        onExited: (exitCode, exitStatus) => {
+            root.measuring = false
+            if (exitStatus !== 0 || exitCode !== 0)
+                root.performanceOutput = root.performanceError !== ""
+                    ? root.performanceError
+                    : "Performance sample failed with exit code " + exitCode + "."
         }
     }
 

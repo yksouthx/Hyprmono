@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start Hyprmono's Quickshell UI, with Caelestia as a compatibility fallback.
+# Start HyprMono's own Quickshell UI, with Caelestia as a compatibility fallback.
 set -u
 
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"

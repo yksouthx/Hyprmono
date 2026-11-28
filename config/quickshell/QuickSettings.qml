@@ -9,11 +9,11 @@ PanelWindow {
     id: root
 
     property real volume: 0.5
+    property bool muted: false
     property string statusMessage: ""
     property string commandError: ""
     signal dismissed()
 
-    screen: Quickshell.screens[0]
     anchors {
         top: true
         bottom: true
@@ -33,6 +33,7 @@ PanelWindow {
                 const match = text.match(/Volume:\s+([0-9.]+)/)
                 if (match) {
                     root.volume = Math.max(0, Math.min(1, Number(match[1])))
+                    root.muted = /\[MUTED\]/.test(text)
                     root.statusMessage = ""
                 } else {
                     root.statusMessage = "Could not read the audio output volume."
@@ -84,6 +85,13 @@ PanelWindow {
         }
     }
 
+    // Coalesce rapid slider/keyboard changes into one wpctl call.
+    Timer {
+        id: writeDebounce
+        interval: 150
+        onTriggered: writeVolume.running = true
+    }
+
     onVisibleChanged: {
         if (visible) {
             root.commandError = ""
@@ -108,6 +116,21 @@ PanelWindow {
         color: "#0b0b0b"
         border.width: 1
         border.color: "#414141"
+        opacity: root.visible ? 1 : 0
+        scale: root.visible ? 1 : 0.96
+        transformOrigin: Item.TopRight
+
+        Behavior on opacity {
+            UiAnimation {
+                duration: 220
+            }
+        }
+
+        Behavior on scale {
+            UiAnimation {
+                duration: 220
+            }
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -166,7 +189,7 @@ PanelWindow {
                 }
 
                 Button {
-                    text: "MUTE"
+                    text: root.muted ? "UNMUTE" : "MUTE"
                     onClicked: {
                         root.commandError = ""
                         toggleMute.running = true
@@ -182,18 +205,14 @@ PanelWindow {
                 value: root.volume
                 onMoved: {
                     root.volume = value
-                }
-                onPressedChanged: {
-                    if (!pressed) {
-                        root.commandError = ""
-                        writeVolume.running = true
-                    }
+                    root.commandError = ""
+                    writeDebounce.restart()
                 }
             }
 
             Text {
                 Layout.fillWidth: true
-                text: "Audio output · " + Math.round(root.volume * 100) + "%"
+                text: "Audio output · " + Math.round(root.volume * 100) + "%" + (root.muted ? " · muted" : "")
                 color: "#858585"
                 font.pixelSize: 10
                 font.family: "NType82Mono"
@@ -201,7 +220,7 @@ PanelWindow {
 
             Text {
                 Layout.fillWidth: true
-                text: root.statusMessage || "Scroll the bar to adjust volume"
+                text: root.statusMessage || "Default output via PipeWire (wpctl)"
                 color: root.statusMessage ? "#d9aaaa" : "#656565"
                 font.pixelSize: 9
                 font.family: "NType82Mono"

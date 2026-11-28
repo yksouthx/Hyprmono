@@ -232,6 +232,10 @@ ApplicationWindow {
             SequentialAnimation on x {
                 running: root.installing
                 loops: Animation.Infinite
+                onRunningChanged: {
+                    if (!running)
+                        progressLine.x = 0
+                }
                 NumberAnimation {
                     from: -progressLine.width
                     to: progressTrack.width

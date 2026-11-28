@@ -9,6 +9,7 @@ import Quickshell.Io
 PanelWindow {
     id: root
 
+    required property var modelData
     property var player
     property bool cavaEnabled: false
     property bool dashboardOpen: false
@@ -33,7 +34,7 @@ PanelWindow {
         memoryText = `RAM ${usedPercent}% · LOAD ${load[1]}`
     }
 
-    screen: Quickshell.screens[0]
+    screen: modelData
     anchors {
         top: true
         left: true
@@ -92,9 +93,9 @@ PanelWindow {
                     spacing: 3
 
                     Repeater {
-                        model: Hyprland.workspaces.values.filter(
-                            workspace => workspace.id > 0 && workspace.id <= 10
-                        )
+                        model: Hyprland.workspaces.values
+                            .filter(workspace => workspace.id > 0 && workspace.id <= 10)
+                            .sort((a, b) => a.id - b.id)
 
                         delegate: Rectangle {
                             required property var modelData
@@ -153,18 +154,15 @@ PanelWindow {
                 }
 
                 Text {
-                    id: clock
-                    property date now: new Date()
-                    text: Qt.formatDateTime(now, "ddd dd MMM  HH:mm")
+                    text: Qt.formatDateTime(systemClock.date, "ddd dd MMM  HH:mm")
                     color: "#d8d8d8"
                     font.pixelSize: 11
                     font.family: "NType82Mono"
 
-                    Timer {
-                        interval: 30000
-                        repeat: true
-                        running: true
-                        onTriggered: clock.now = new Date()
+                    // Ticks exactly on the minute, with no polling timer.
+                    SystemClock {
+                        id: systemClock
+                        precision: SystemClock.Minutes
                     }
                 }
             }
@@ -196,6 +194,7 @@ PanelWindow {
                         model: SystemTray.items
 
                         delegate: Item {
+                            id: trayItem
                             required property var modelData
                             width: 18
                             height: 20
@@ -204,15 +203,38 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 width: 16
                                 height: 16
-                                source: modelData.icon
+                                source: trayItem.modelData.icon
                                 sourceSize: Qt.size(32, 32)
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
                             }
 
+                            // The item's DBusMenu, shown below the icon. The tray sits at the
+                            // right end of the bar, so the popup grows leftwards to stay on screen.
+                            QsMenuAnchor {
+                                id: trayMenu
+                                menu: trayItem.modelData.menu
+                                anchor.item: trayItem
+                                anchor.edges: Edges.Bottom | Edges.Right
+                                anchor.gravity: Edges.Bottom | Edges.Left
+                            }
+
                             MouseArea {
                                 anchors.fill: parent
-                                onClicked: modelData.activate()
+                                acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                                onClicked: mouse => {
+                                    const item = trayItem.modelData
+                                    if (mouse.button === Qt.RightButton
+                                            || (mouse.button === Qt.LeftButton && item.onlyMenu)) {
+                                        if (item.hasMenu)
+                                            trayMenu.open()
+                                    } else if (mouse.button === Qt.MiddleButton) {
+                                        item.secondaryActivate()
+                                    } else {
+                                        item.activate()
+                                    }
+                                }
+                                onWheel: wheel => trayItem.modelData.scroll(wheel.angleDelta.y, false)
                             }
                         }
                     }

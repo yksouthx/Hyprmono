@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+# Run the installer inside a terminal emulator, keep the window open when it
+# ends (so errors can be read), and exit with the installer's own status.
 set -Eeuo pipefail
 
 if (( $# < 1 )); then
@@ -15,15 +16,30 @@ if [[ ! -f "$installer" ]]; then
     exit 1
 fi
 
+# Terminal emulators do not reliably propagate the child's exit status, so the
+# installer reports it through a status file instead.
+status_file=$(mktemp)
+trap 'rm -f -- "$status_file"' EXIT
+export HYPRMONO_STATUS_FILE="$status_file"
+export HYPRMONO_PAUSE_ON_EXIT=1
+
+terminal_status=0
 if command -v kitty >/dev/null 2>&1; then
-    exec kitty -- bash "$installer" "$@"
+    kitty -- bash "$installer" "$@" || terminal_status=$?
 elif command -v foot >/dev/null 2>&1; then
-    exec foot -e bash "$installer" "$@"
+    foot -e bash "$installer" "$@" || terminal_status=$?
 elif command -v alacritty >/dev/null 2>&1; then
-    exec alacritty -e bash "$installer" "$@"
+    alacritty -e bash "$installer" "$@" || terminal_status=$?
 elif command -v xterm >/dev/null 2>&1; then
-    exec xterm -e bash "$installer" "$@"
+    xterm -e bash "$installer" "$@" || terminal_status=$?
+else
+    printf 'No supported terminal emulator found (kitty, foot, alacritty, or xterm).\n' >&2
+    exit 127
 fi
 
-printf 'No supported terminal emulator found (kitty, foot, alacritty, or xterm).\n' >&2
-exit 127
+installer_status=""
+[[ -s "$status_file" ]] && installer_status=$(< "$status_file")
+if [[ "$installer_status" =~ ^[0-9]+$ ]]; then
+    exit "$installer_status"
+fi
+exit "$terminal_status"

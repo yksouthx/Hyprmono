@@ -8,9 +8,14 @@ set -Eeuo pipefail
 # --- Configuration ---
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 LOCAL_BIN="$HOME/.local/bin"
-TARGETS=(hypr hyprmono kitty wofi rofi fuzzel waybar swaylock swaync dunst fastfetch fish vim wlogout fontconfig xdg-desktop-portal kde-material-you-colors caelestia calm-shell)
+# Directories the current installer deploys. Used when no deployment record exists.
+CURRENT_TARGETS=(hypr hyprmono caelestia calm-shell kitty vim fontconfig xdg-desktop-portal fastfetch fuzzel fnott)
+# install.sh records what it actually deployed here, so uninstall never removes
+# unrelated directories (fish, waybar, rofi, ...) that HyprMono does not manage.
+DEPLOYED_FILE="$HOME/.cache/Hyprmono/deployed-targets"
+TARGETS=()
 # Include tools from earlier releases so uninstall removes stale copies.
-INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh uninstall.sh watch-quality.sh)
+INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh)
 BACKUP_PREFIX=".config-backup-"
 LOG_FILE="$HOME/.cache/Hyprmono/uninstall.log"
 # install.sh records the very first backup (the user's original configs) here.
@@ -47,6 +52,21 @@ confirm() {
     printf '\n'
 
     [[ "$reply" =~ ^[Yy]$ ]] || exit 1
+}
+
+load_targets() {
+    local name
+    TARGETS=()
+    if [[ -s "$DEPLOYED_FILE" ]]; then
+        while IFS= read -r name; do
+            # Reject anything that is not a plain directory name.
+            [[ "$name" =~ ^[A-Za-z0-9._-]+$ && "$name" != "." && "$name" != ".." ]] || continue
+            TARGETS+=("$name")
+        done < "$DEPLOYED_FILE"
+    fi
+    if (( ${#TARGETS[@]} == 0 )); then
+        TARGETS=("${CURRENT_TARGETS[@]}")
+    fi
 }
 
 remove_configs() {
@@ -91,12 +111,13 @@ restore_latest_backup() {
         warn "Found backup: $latest_backup"
         confirm "Restore this backup?"
 
-        for target in "${TARGETS[@]}"; do
-            if [[ -e "$latest_backup/$target" || -L "$latest_backup/$target" ]]; then
-                cp -a "$latest_backup/$target" "$CONFIG_DIR/"
-                log "Restored $target from $latest_backup"
-                ok "Restored $target from backup"
-            fi
+        local saved_config target
+        for saved_config in "$latest_backup"/*; do
+            [[ -e "$saved_config" || -L "$saved_config" ]] || continue
+            target=$(basename "$saved_config")
+            cp -a "$saved_config" "$CONFIG_DIR/"
+            log "Restored $target from $latest_backup"
+            ok "Restored $target from backup"
         done
         if [[ -d "$latest_backup/.local-bin" ]]; then
             mkdir -p "$LOCAL_BIN"
@@ -129,6 +150,7 @@ main() {
 
     confirm "Are you sure you want to proceed?"
 
+    load_targets
     remove_configs
     remove_installed_scripts
     printf '\n'

@@ -16,14 +16,27 @@ Scope {
         return players.length > 0 ? players[0] : null
     }
 
-    Bar {
-        player: root.activePlayer
-        cavaEnabled: root.cavaVisualizerEnabled
-        dashboardOpen: root.mediaDashboardOpen
-        onMediaClicked: root.mediaDashboardOpen = !root.mediaDashboardOpen
-        onQuickSettingsClicked: root.quickSettingsOpen = !root.quickSettingsOpen
+    // One wallpaper surface and one bar per monitor (hot-plug aware).
+    Variants {
+        model: Quickshell.screens
+
+        Wallpaper {}
     }
 
+    Variants {
+        model: Quickshell.screens
+
+        Bar {
+            player: root.activePlayer
+            cavaEnabled: root.cavaVisualizerEnabled
+            dashboardOpen: root.mediaDashboardOpen
+            onMediaClicked: root.mediaDashboardOpen = !root.mediaDashboardOpen
+            onQuickSettingsClicked: root.quickSettingsOpen = !root.quickSettingsOpen
+        }
+    }
+
+    // Overlays set no explicit screen, so the compositor places them on the
+    // focused monitor.
     MediaDashboard {
         player: root.activePlayer
         visible: root.mediaDashboardOpen

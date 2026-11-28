@@ -38,8 +38,12 @@ usage() {
     cat <<'EOF'
 Usage: migrate.sh [--dry-run] [--rollback BACKUP_DIR]
 
-Scan for known duplicate desktop-shell components. Nothing is removed unless
-the user approves each item. --dry-run only reports candidates.
+Scan for known duplicate bar / desktop-shell components (Waybar, Eww, AGS,
+HyprPanel) and old HyprMono helpers. Nothing is removed unless the user
+approves each item. --dry-run only reports candidates.
+
+Launchers, notification daemons, wallpaper daemons, lock screens and network
+applets are never offered for removal: the HyprMono bar does not replace them.
 
 Restore a migration backup with --rollback and its exact backup directory.
 EOF
@@ -59,25 +63,14 @@ add_path_candidate() {
 
 scan_paths() {
     local name root
+    # Only bars / shell frameworks are duplicates of the HyprMono Quickshell bar.
+    # Launchers, notification daemons, wallpaper tools, lock screens and tray
+    # applets are NOT replaced by it, so they are deliberately never listed.
     for root in "${CONFIG_ROOTS[@]}"; do
-        for name in waybar wofi rofi fuzzel hyprpanel; do
+        for name in waybar hyprpanel eww ags; do
             add_path_candidate "$root/$name" \
-                "$name configuration (a Quickshell launcher/bar can replace this)" config
+                "$name configuration (an existing bar / desktop-shell layer; the HyprMono Quickshell bar replaces it)" config
         done
-        for name in swaync dunst mako; do
-            add_path_candidate "$root/$name" \
-                "$name configuration (Quickshell provides the notification center)" config
-        done
-        for name in eww ags wlogout; do
-            add_path_candidate "$root/$name" \
-                "$name configuration (an existing desktop shell/widget layer)" config
-        done
-        add_path_candidate "$root/swaylock" \
-            "swaylock configuration (Caelestia provides a lock screen; Hyprlock remains the fallback)" config
-        add_path_candidate "$root/hypr/hyprpaper.conf" \
-            "Hyprpaper config (Caelestia provides wallpaper management)" config
-        add_path_candidate "$root/kde-material-you-colors" \
-            "KDE Material You Colors config (Caelestia owns dynamic shell theming)" config
     done
 
     for root in "${SHARE_ROOTS[@]}"; do
@@ -87,11 +80,11 @@ scan_paths() {
         done
     done
 
-    for name in waybar wofi rofi fuzzel swaync dunst mako eww ags hyprpanel wlogout hyde hyde-shell.sh cpuinfo.sh gpuinfo.sh; do
+    for name in waybar eww ags hyprpanel hyde hyde-shell.sh cpuinfo.sh gpuinfo.sh; do
         case "$name" in
-            cpuinfo.sh|gpuinfo.sh)
+            hyde|hyde-shell.sh|cpuinfo.sh|gpuinfo.sh)
                 add_path_candidate "$LOCAL_BIN/$name" \
-                    "$name helper (Caelestia's dashboard replaces the old bar metrics)" executable
+                    "$name (legacy HyprMono helper that is no longer shipped)" executable
                 ;;
             *)
                 add_path_candidate "$LOCAL_BIN/$name" \
@@ -103,7 +96,7 @@ scan_paths() {
 
 scan_packages() {
     local pkg reverse
-    local -a candidates=(waybar wofi rofi rofi-wayland fuzzel swaync swaynotificationcenter dunst mako eww aylurs-gtk-shell hyprpanel wlogout swaylock hyprpaper network-manager-applet kde-material-you-colors)
+    local -a candidates=(waybar eww aylurs-gtk-shell hyprpanel)
 
     command -v pacman >/dev/null 2>&1 || return 0
     for pkg in "${candidates[@]}"; do
@@ -120,15 +113,8 @@ scan_packages() {
 
 package_reason() {
     case "$1" in
-        waybar) printf '%s' "status bar replaced by the Quickshell shell" ;;
-        wofi|rofi|rofi-wayland|fuzzel) printf '%s' "launcher alternative; Quickshell provides the default launcher" ;;
-        swaync|swaynotificationcenter|dunst|mako) printf '%s' "notification daemon replaced by the Quickshell notification center" ;;
-        eww|aylurs-gtk-shell|hyprpanel) printf '%s' "desktop-shell/widget alternative" ;;
-        wlogout) printf '%s' "session menu alternative provided by the shell" ;;
-        swaylock) printf '%s' "lock screen alternative; Caelestia provides the lock screen and Hyprlock is the fallback" ;;
-        hyprpaper) printf '%s' "wallpaper daemon replaced by Caelestia's wallpaper manager" ;;
-        network-manager-applet) printf '%s' "tray app replaced by Caelestia's network controls" ;;
-        kde-material-you-colors) printf '%s' "theme daemon replaced by Caelestia's dynamic theming" ;;
+        waybar) printf '%s' "status bar replaced by the HyprMono Quickshell bar" ;;
+        eww|aylurs-gtk-shell|hyprpanel) printf '%s' "desktop-shell/widget framework alternative to the Quickshell shell" ;;
         *) printf '%s' "known optional desktop-shell component" ;;
     esac
 }

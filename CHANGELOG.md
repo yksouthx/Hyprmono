@@ -4,7 +4,53 @@ Notable changes to HyprMono are documented here.
 
 ## Unreleased
 
+### Fixed
+
+- Settings window: a `Process` nested inside another `Process` prevented the
+  window from loading; the performance sampler is now a sibling object.
+- `Super + L` and `Super + R` no longer depend on Caelestia: lock falls back to
+  hyprlock and the launcher falls back to fuzzel/wofi/rofi (new
+  `lock-screen.sh` and `launch-menu.sh`).
+- The project shell now draws the wallpaper, runs one bar per monitor, and the
+  clock follows the system minute instead of polling.
+- A polkit authentication agent, fnott and nm-applet are started with the
+  session (`start-session-services.sh`).
+- `~/.local/bin` is added to the PATH Hyprland launches programs with, and the
+  emoji picker bind uses the absolute path.
+- Smart-gaps window rules now come with the matching workspace rules.
+- Lua modules use idiomatic dotted `require` paths.
+- Installer: the Calm-shell build tools install no longer hangs on an
+  invisible confirmation prompt; a failing QML installer falls back to the
+  terminal installer; the terminal installer window stays open and its real
+  exit status is reported; prompts survive end-of-input; the sudo keep-alive is
+  always stopped; the installer window sources are no longer deployed into
+  `~/.config`.
+- Uninstall removes only directories the installer recorded as deployed
+  (never unrelated fish/waybar/rofi configs) and restores the original backup.
+- Migration no longer claims the project shell replaces launchers,
+  notification daemons or wallpaper tools, and never offers to remove them.
+- `hyprmono` runs repository scripts that are not executable; `audit` checks
+  the real requirements and exits non-zero on failure.
+- `watch-quality.sh` detects QML syntax errors correctly, uses a meaningful
+  shellcheck severity, and formats only when asked.
+- `launch_first_available.sh` no longer uses `eval`.
+- `start-caelestia.sh` is renamed `start-shell.sh` (it starts the project
+  shell first); the old copy is removed on install.
+- Kitty config: removed an inline comment kitty does not support.
+
 ### Added
+
+- Reusable Quickshell easing animation for the media pill and animated
+  media/quick-settings panel entrances.
+- System tray context menus in the bar (right-click; left-click for menu-only
+  items; middle-click and scroll are forwarded to the tray item).
+- fuzzel (launcher) and fnott (notification daemon) with monochrome configs,
+  installed in every profile; fnott starts only when the project shell is in
+  use and no other notification daemon is running. `nm-applet` is installed
+  and started for the tray.
+- Tests for the Hyprland Lua config, helper scripts, profile command,
+  migration, uninstall, QML syntax and repository hygiene; a GitHub Actions
+  workflow runs them.
 
 - Added a repository-root `./install.sh` entry point.
 - Added `hyprmono migrate` to scan known duplicate shell configurations, user

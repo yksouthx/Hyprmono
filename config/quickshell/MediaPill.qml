@@ -14,9 +14,14 @@ Item {
     readonly property int artSize: 30
     signal clicked()
 
-    visible: player !== null
+    visible: !!player
+    opacity: visible ? 1 : 0
     implicitWidth: visible ? pill.width : 0
     implicitHeight: 36
+
+    Behavior on opacity {
+        UiAnimation {}
+    }
 
     function updateSpectrum(line) {
         const parsed = line.trim().split(/[;,\s]+/)
@@ -34,7 +39,7 @@ Item {
             "sh", "-c",
             "command -v cava >/dev/null 2>&1 || exit 127; config_home=\"${XDG_CONFIG_HOME:-$HOME/.config}\"; exec cava -p \"$config_home/hyprmono/cava.conf\""
         ]
-        running: root.cavaEnabled && root.player !== null && root.player.isPlaying
+        running: root.cavaEnabled && !!root.player && root.player.isPlaying
             && root.visible && !root.dashboardOpen
         onExited: (exitCode, exitStatus) => {
             if (root.player?.isPlaying && exitCode !== 0)
@@ -48,7 +53,7 @@ Item {
     Timer {
         interval: 1000
         repeat: true
-        running: root.player !== null && root.player.isPlaying && root.visible
+        running: !!root.player && root.player.isPlaying && root.visible
             && !root.dashboardOpen
         onTriggered: root.player.positionChanged()
     }
@@ -64,10 +69,7 @@ Item {
         border.color: "#3b3b3b"
 
         Behavior on width {
-            NumberAnimation {
-                duration: 180
-                easing.type: Easing.OutCubic
-            }
+            UiAnimation {}
         }
 
         RowLayout {
@@ -129,10 +131,7 @@ Item {
                 visible: Layout.preferredWidth > 0
 
                 Behavior on Layout.preferredWidth {
-                    NumberAnimation {
-                        duration: 180
-                        easing.type: Easing.OutCubic
-                    }
+                    UiAnimation {}
                 }
 
                 Text {
@@ -159,7 +158,7 @@ Item {
             height: 2
             radius: 1
             color: "#dedede"
-            visible: root.player?.positionSupported && root.player?.length > 0
+            visible: !!root.player && root.player.positionSupported && root.player.length > 0
         }
     }
 

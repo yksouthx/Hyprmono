@@ -35,6 +35,11 @@ ApplicationWindow {
         results.currentIndex = emojiModel.count > 0 ? 0 : -1
     }
 
+    function copySelected() {
+        if (emojiModel.count > 0 && results.currentIndex >= 0)
+            copyEmoji(emojiModel.get(results.currentIndex).emoji)
+    }
+
     function copyEmoji(value) {
         errorText = ""
         copyToClipboard.exec(["wl-copy", value])
@@ -117,15 +122,16 @@ ApplicationWindow {
                 if (results.currentIndex > 0)
                     results.currentIndex -= 1
             }
-            Keys.onReturnPressed: {
-                if (emojiModel.count > 0 && results.currentIndex >= 0)
-                    root.copyEmoji(emojiModel.get(results.currentIndex).emoji)
-            }
+            Keys.onReturnPressed: root.copySelected()
+            Keys.onEnterPressed: root.copySelected()
             Keys.onEscapePressed: root.close()
         }
 
         ListView {
             id: results
+
+            // Keep the keyboard selection scrolled into view.
+            onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
 
             Layout.fillWidth: true
             Layout.fillHeight: true

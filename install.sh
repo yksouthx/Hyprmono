@@ -2,5 +2,6 @@
 
 set -Eeuo pipefail
 
-readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly REPO_ROOT
 exec bash "$REPO_ROOT/scripts/install.sh" "$@"

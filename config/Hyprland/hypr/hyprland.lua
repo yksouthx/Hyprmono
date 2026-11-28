@@ -4,7 +4,7 @@
 -- Keep personal changes in custom/*.lua; those modules are loaded last.
 -- https://wiki.hypr.land/configuring/
 
-local colours = require("./modules/colours")
+local colours = require("modules.colours")
 
 local profile = "full-visual"
 local config_home = os.getenv("XDG_CONFIG_HOME") or ((os.getenv("HOME") or "") .. "/.config")
@@ -38,6 +38,7 @@ hl.monitor({
 hl.env("HYPRCURSOR_THEME", "rose-pine-hyprcursor")
 hl.env("HYPRCURSOR_SIZE", "32")
 hl.env("XCURSOR_SIZE", "32")
+hl.env("PATH", (os.getenv("HOME") or "") .. "/.local/bin:" .. (os.getenv("PATH") or ""))
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 
 -----------------------
@@ -219,8 +220,9 @@ hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
 
 hl.on("hyprland.start", function()
     -- The custom shell uses hypridle; the Caelestia fallback manages idle itself.
+    hl.exec_cmd("$HOME/.local/bin/start-session-services.sh")
     hl.exec_cmd("$HOME/.local/bin/start-idle.sh")
-    hl.exec_cmd("$HOME/.local/bin/start-caelestia.sh")
+    hl.exec_cmd("$HOME/.local/bin/start-shell.sh")
 end)
 
 ---------------------
@@ -239,11 +241,11 @@ local main_mod = "SUPER"
 hl.bind(main_mod .. " + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind(main_mod .. " + E", hl.dsp.exec_cmd(file_manager))
 hl.bind(main_mod .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(main_mod .. " + R", hl.dsp.global("caelestia:launcher"))
+hl.bind(main_mod .. " + R", hl.dsp.exec_cmd("$HOME/.local/bin/launch-menu.sh"))
 hl.bind(main_mod .. " + T", hl.dsp.exec_cmd(text_editor))
 hl.bind(main_mod .. " + I", hl.dsp.exec_cmd(
     "quickshell -n -p " .. string.format("%q", config_home .. "/hyprmono/Settings.qml")))
-hl.bind(main_mod .. " + SHIFT + E", hl.dsp.exec_cmd("hyprmono emoji"))
+hl.bind(main_mod .. " + SHIFT + E", hl.dsp.exec_cmd("$HOME/.local/bin/hyprmono emoji"))
 hl.bind("ALT + F4", hl.dsp.window.close())
 hl.bind(main_mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(main_mod .. " + P", hl.dsp.window.pseudo())
@@ -267,16 +269,14 @@ hl.bind(main_mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(main_mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(main_mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Caelestia shell panels. Global shortcuts are harmless no-ops if the shell isn't running.
+-- Caelestia shell panels. These global shortcuts are harmless no-ops unless Caelestia is running.
 hl.bind("SUPER + SUPER_L", hl.dsp.global("caelestia:launcher"), { release = true })
 hl.bind("CTRL + ALT + Delete", hl.dsp.global("caelestia:session"))
 hl.bind(main_mod .. " + N", hl.dsp.global("caelestia:sidebar"))
 hl.bind(main_mod .. " + K", hl.dsp.global("caelestia:showall"))
 hl.bind("CTRL + ALT + C", hl.dsp.global("caelestia:clearNotifs"), { locked = true })
--- Lock: Caelestia's lock screen when the shell is running, hyprlock otherwise.
-hl.bind(main_mod .. " + L", hl.dsp.exec_cmd(
-    "pgrep -x quickshell >/dev/null && hyprctl dispatch 'hl.dsp.global(\"caelestia:lock\")' "
-    .. "|| pidof hyprlock || hyprlock -c \"$HOME/.config/hypr/hyprlock/hyprlock.conf\""))
+-- Lock: Caelestia's lock screen when it is registered, hyprlock otherwise.
+hl.bind(main_mod .. " + L", hl.dsp.exec_cmd("$HOME/.local/bin/lock-screen.sh"))
 
 local media_binds = {
     { "XF86AudioRaiseVolume", "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+", true },
@@ -298,6 +298,8 @@ end
 ---- WINDOWS AND WORKSPACES --
 -------------------------------
 
+hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
+hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
 hl.window_rule({
     name = "no-gaps-tiled-video-workspaces",
     match = { float = false, workspace = "w[tv1]" },
@@ -333,9 +335,9 @@ hl.window_rule({
 --------------------------
 
 -- These modules are intentionally loaded last so users can override defaults.
-require("./custom/env")
-require("./custom/variables")
-require("./custom/general")
-require("./custom/rules")
-require("./custom/keybinds")
-require("./custom/execs")
+require("custom.env")
+require("custom.variables")
+require("custom.general")
+require("custom.rules")
+require("custom.keybinds")
+require("custom.execs")

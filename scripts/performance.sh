@@ -61,6 +61,7 @@ read_resident_kib() {
 
 snapshot_group() {
     local wanted_group="$1" output_name="$2"
+    # shellcheck disable=SC2178  # nameref to the caller's associative array
     local -n output="$output_name"
     local proc_dir pid group ticks
 
@@ -69,6 +70,7 @@ snapshot_group() {
         group=$(process_group "$pid") || continue
         [[ "$group" == "$wanted_group" ]] || continue
         ticks=$(read_process_ticks "$pid") || continue
+        # shellcheck disable=SC2034  # writes through the nameref to the caller's array
         output["$pid"]="$ticks"
     done
 }
@@ -98,6 +100,7 @@ current_group_usage() {
     local memory_mib
     memory_mib=$(awk -v kib="$rss_total" 'BEGIN { printf "%.1f", kib / 1024 }')
 
+    # Results are published to globals named <group>_cpu/_memory/_count.
     printf -v "${wanted_group}_cpu" '%s' "$cpu_percent"
     printf -v "${wanted_group}_memory" '%s' "$memory_mib"
     printf -v "${wanted_group}_count" '%s' "$process_count"
@@ -112,6 +115,7 @@ metric_regressed() {
         }'
 }
 
+# shellcheck disable=SC2154  # hyprland_*/quickshell_* are set via printf -v
 compare_baseline() {
     local recorded_at recorded_duration base_hypr_cpu base_hypr_memory base_qs_cpu base_qs_memory
     [[ -r "$BASELINE_FILE" ]] || {
@@ -157,6 +161,7 @@ compare_baseline() {
     fi
 }
 
+# shellcheck disable=SC2154  # hyprland_*/quickshell_* are set via printf -v
 main() {
     while (( $# > 0 )); do
         case "$1" in

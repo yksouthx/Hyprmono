@@ -11,6 +11,24 @@ shopt -s nullglob
 # exiting when set -e kills the script on a non-zero return.
 trap 'err "Failed (exit $?) at line $LINENO: $BASH_COMMAND"' ERR
 
+# Single EXIT handler: stop the sudo keep-alive, report the exit status to a
+# parent launcher (HYPRMONO_STATUS_FILE) and optionally keep the terminal open
+# (HYPRMONO_PAUSE_ON_EXIT) so errors can be read.
+on_exit() {
+    local status=$?
+    if [[ -n "${SUDO_KEEPALIVE_PID:-}" ]]; then
+        kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+    fi
+    if [[ -n "${HYPRMONO_STATUS_FILE:-}" ]]; then
+        printf '%s\n' "$status" > "$HYPRMONO_STATUS_FILE" 2>/dev/null || true
+    fi
+    if [[ "${HYPRMONO_PAUSE_ON_EXIT:-0}" == 1 && -t 0 ]]; then
+        printf '\nInstaller finished with exit status %s. Press Enter to close this window. ' "$status"
+        read -r _ || true
+    fi
+}
+trap on_exit EXIT
+
 # Terminal Title
 printf "\033]0;Hyprmono Installer\a"
 
@@ -86,6 +104,7 @@ has() { command -v "$1" >/dev/null 2>&1; }
 ask() {
     local prompt="$1"
     local default="${2:-y}"
+    local answer=""
 
     if [[ "$ASSUME_YES" -eq 1 ]]; then
         info "Auto-confirming (--yes): $prompt -> ${default}"
@@ -103,7 +122,7 @@ ask() {
     else
         printf "${ACCENT}[y/N] ${RESET}"
     fi
-    read -r answer
+    read -r answer || answer=""
     [[ -z "$answer" ]] && answer="$default"
     [[ "$answer" =~ ^[Yy]$ ]]
 }
@@ -168,7 +187,6 @@ keep_sudo_alive() {
         sleep 60
     done &
     SUDO_KEEPALIVE_PID=$!
-    trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true' EXIT
 }
 
 is_valid_repo() { [[ -d "$1/config" ]]; }
@@ -212,7 +230,7 @@ resolve_repo_root() {
     done
 
     local found
-    found=$(find "$HOME" -maxdepth 4 -type d -iname "hyprmono" 2>/dev/null | while read -r d; do
+    found=$(find "$HOME" -maxdepth 4 -name '.*' -prune -o -type d -iname "hyprmono" -print 2>/dev/null | while read -r d; do
         is_valid_repo "$d" && { printf '%s\n' "$d"; break; }
     done)
     if [[ -n "$found" ]]; then
@@ -225,6 +243,7 @@ resolve_repo_root() {
 
 # --- Package Management ---
 PACMAN_PACKAGES=(
+    qt6-imageformats fuzzel fnott network-manager-applet
     git
     hyprland hyprlock hypridle kitty
     quickshell
@@ -305,6 +324,9 @@ collect_config_deployments() {
                     CONFIG_SOURCES+=("$folder_path/caelestia")
                     CONFIG_TARGETS+=(caelestia)
                 fi
+                ;;
+            installer)
+                # The installer window runs from the repository; it is not a user config.
                 ;;
             fastfetch)
                 if component_selected "$folder_name"; then
@@ -493,6 +515,8 @@ install_packages() {
             return 0
         fi
         if ask "Install missing dependencies?" y; then
+            # The redirect belongs to the (unprivileged) subshell and writes the user's own log.
+            # shellcheck disable=SC2024
             (sudo pacman -S --needed --noconfirm "${missing[@]}" &>>"$LOGFILE") &
             local pm_pid=$!
             spinner "$pm_pid" "Installing packages..."
@@ -604,7 +628,8 @@ install_configs() {
     fi
 
     log "Starting backup..."
-    local backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
+    local backup_dir
+    backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
     [[ -e "$backup_dir" ]] && backup_dir="${backup_dir}-$$"
     mkdir -p "$backup_dir"
     record_original_backup "$backup_dir"
@@ -678,6 +703,13 @@ install_configs() {
     if [[ -d "$CONFIG_DIR/hypr/hyprlock" ]]; then
         find "$CONFIG_DIR/hypr/hyprlock" -type f -name '*.sh' -exec chmod +x {} +
     fi
+
+    # Record what was deployed so uninstall removes exactly these directories.
+    mkdir -p "$LOGDIR"
+    local recorded_file="$LOGDIR/deployed-targets" recorded
+    for recorded in "${deployed[@]}"; do
+        grep -qxF -- "$recorded" "$recorded_file" 2>/dev/null || printf '%s\n' "$recorded" >> "$recorded_file"
+    done
     # Tree-style summary of what was deployed
     echo -e "\n${BOLD}${WHITE}Configuration${RESET}"
     local last_idx=$(( ${#deployed[@]} - 1 ))
@@ -697,14 +729,15 @@ install_configs() {
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
         # Include tools from earlier releases so a wipe removes stale copies.
         local managed_script
-        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch_first_available.sh launch_terminal.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh uninstall.sh watch-quality.sh; do
+        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh; do
             backup_local_bin_entry "$managed_script" "$backup_dir"
             rm -f -- "$LOCAL_BIN/$managed_script"
         done
     fi
     for script in "$REPO_ROOT/scripts"/*.sh; do
         if [[ -f "$script" ]]; then
-            local script_name=$(basename "$script")
+            local script_name
+            script_name=$(basename "$script")
 
             # Keep installer and repository-only development tools out of the runtime bin.
             if [[ "$script_name" == "$SELF_NAME" || "$script_name" == "watch-quality.sh" ]]; then
@@ -726,6 +759,13 @@ install_configs() {
             ok "Installed $script_name to $LOCAL_BIN"
         fi
     done
+
+    # start-caelestia.sh was renamed to start-shell.sh; drop the stale copy.
+    if [[ -e "$LOCAL_BIN/start-caelestia.sh" || -L "$LOCAL_BIN/start-caelestia.sh" ]]; then
+        backup_local_bin_entry "start-caelestia.sh" "$backup_dir"
+        rm -f -- "$LOCAL_BIN/start-caelestia.sh"
+        info "Removed legacy start-caelestia.sh (now start-shell.sh)"
+    fi
 
     # Create 'hyprmono' command symlink
     if [[ -f "$LOCAL_BIN/hyprmono.sh" ]]; then
@@ -783,7 +823,8 @@ install_calm_shell() {
                 return 0
             fi
             info "Installing optional Calm-shell build tools: ${missing_build[*]}"
-            sudo pacman -S --needed "${missing_build[@]}" &>>"$LOGFILE"
+            # shellcheck disable=SC2024  # the log file is the user's own
+            sudo pacman -S --needed --noconfirm "${missing_build[@]}" &>>"$LOGFILE"
         fi
         bash "$REPO_ROOT/scripts/install-calm-shell.sh"
         ok "Calm-shell is ready at $HOME/.local/bin/calm"
@@ -818,7 +859,7 @@ validate_installation() {
     fi
 
     local script
-    for script in start-caelestia.sh migrate.sh performance.sh profile.sh; do
+    for script in start-shell.sh start-idle.sh start-session-services.sh lock-screen.sh launch-menu.sh migrate.sh performance.sh profile.sh; do
         if [[ -x "$LOCAL_BIN/$script" ]]; then
             ok "Runtime helper is installed: $script"
         else
@@ -826,11 +867,28 @@ validate_installation() {
         fi
     done
 
+    if [[ -L "$LOCAL_BIN/hyprmono" && -e "$LOCAL_BIN/hyprmono" ]]; then
+        ok "hyprmono command resolves to $(readlink "$LOCAL_BIN/hyprmono")"
+    else
+        warn "hyprmono command link is missing or broken: $LOCAL_BIN/hyprmono"
+    fi
+
+    if [[ -r "$CONFIG_DIR/hyprmono/shell.qml" ]]; then
+        ok "HyprMono Quickshell shell is deployed."
+    else
+        warn "HyprMono shell is missing: $CONFIG_DIR/hyprmono/shell.qml"
+    fi
+
     if has quickshell || has qs; then
         ok "Quickshell runtime is available."
     else
         warn "Quickshell is not installed; install quickshell to enable the desktop UI."
     fi
+
+    case ":$PATH:" in
+        *":$LOCAL_BIN:"*) ;;
+        *) warn "$LOCAL_BIN is not in PATH; add it to your shell profile to run 'hyprmono' directly." ;;
+    esac
 }
 
 main() {
@@ -976,7 +1034,11 @@ main() {
             quickshell_bin=$(command -v qs)
         fi
         export HYPRMONO_REPO="$REPO_ROOT"
-        exec "$quickshell_bin" -p "$REPO_ROOT/config/installer/Installer.qml"
+        # Not exec'd: if the QML window fails to start, continue with the terminal installer.
+        if "$quickshell_bin" -p "$REPO_ROOT/config/installer/Installer.qml"; then
+            return 0
+        fi
+        warn "The graphical installer failed to start; continuing in the terminal."
     fi
 
    clear
@@ -997,7 +1059,7 @@ EOF
         info "Using the terminal installer."
     fi
 
-printf "${DIM}Version     1.0${RESET}\n"
+printf "${DIM}Version     4.5${RESET}\n"
 printf "${DIM}Repository  %s${RESET}\n" "$REPO_ROOT"
 printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
 
@@ -1109,7 +1171,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     echo -e "${BOLD}${WHITE}Next${RESET}"
     echo "  reboot (or reload Hyprland)"
     echo "  calm"
-    echo "  start-caelestia.sh (launches Hyprmono's shell or the Caelestia fallback)"
+    echo "  start-shell.sh (launches HyprMono's shell, or the Caelestia fallback)"
     if [[ "$DRY_RUN" -eq 1 ]]; then
         echo "  rerun without --dry-run to apply changes"
     fi

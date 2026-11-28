@@ -34,7 +34,6 @@ REPO_DIR=$(resolve_repo_dir || true)
 # --- Colors ---
 RED="\e[38;5;203m"
 GREEN="\e[38;5;114m"
-YELLOW="\e[38;5;222m"
 CYAN="\e[38;5;117m"
 MAGENTA="\e[38;5;213m"
 BOLD="\e[1m"
@@ -48,12 +47,30 @@ run_repo_script() {
     local script_name="$1"
     shift
 
-    if [[ -n "$REPO_DIR" && -x "$REPO_DIR/scripts/$script_name" ]]; then
+    # Scripts are always run through bash, so they only need to exist (not be +x).
+    if [[ -n "$REPO_DIR" && -f "$REPO_DIR/scripts/$script_name" ]]; then
         bash "$REPO_DIR/scripts/$script_name" "$@"
     elif [[ -f "$SCRIPTS_DIR/$script_name" ]]; then
         bash "$SCRIPTS_DIR/$script_name" "$@"
     else
         err "Unable to locate $script_name. Set HYPRMONO_REPO to your HyprMono checkout."
+        exit 1
+    fi
+}
+
+# Open one of the installed Quickshell windows (settings, emoji picker).
+open_qml_window() {
+    local file="$1" description="$2"
+    if [[ ! -r "$file" ]]; then
+        err "$description is not installed at $file. Run hyprmono install first."
+        exit 1
+    fi
+    if command -v quickshell >/dev/null 2>&1; then
+        quickshell -n -p "$file"
+    elif command -v qs >/dev/null 2>&1; then
+        qs -n -p "$file"
+    else
+        err "Quickshell is required to open the $description."
         exit 1
     fi
 }
@@ -106,18 +123,17 @@ case "${1:-help}" in
     audit)
         log "Running System Audit..."
         missing=()
-        for bin in hyprland hypridle kitty; do
-            if ! command -v "$bin" &> /dev/null; then
-                missing+=("$bin")
-            fi
+        for bin in Hyprland hypridle hyprlock kitty wpctl brightnessctl playerctl wl-copy fuzzel fnott; do
+            command -v "$bin" >/dev/null 2>&1 || missing+=("$bin")
         done
-        if ! command -v caelestia &> /dev/null && ! command -v qs &> /dev/null; then
-            missing+=("caelestia-shell")
+        if ! command -v quickshell >/dev/null 2>&1 && ! command -v qs >/dev/null 2>&1; then
+            missing+=("quickshell")
         fi
-        if [ ${#missing[@]} -eq 0 ]; then
-            log "${GREEN}Audit successful: Core components present.${RESET}"
+        if (( ${#missing[@]} == 0 )); then
+            log "${GREEN}Audit successful: core components present.${RESET}"
         else
-            err "Audit failed: Missing components: ${missing[*]}"
+            err "Audit failed: missing components: ${missing[*]}"
+            exit 1
         fi
         ;;
     migrate)
@@ -127,34 +143,10 @@ case "${1:-help}" in
         run_repo_script profile.sh "${@:2}"
         ;;
     settings)
-        settings_file="${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/Settings.qml"
-        if [[ ! -r "$settings_file" ]]; then
-            err "Settings window is not installed at $settings_file. Run hyprmono install first."
-            exit 1
-        fi
-        if command -v quickshell >/dev/null 2>&1; then
-            quickshell -n -p "$settings_file"
-        elif command -v qs >/dev/null 2>&1; then
-            qs -n -p "$settings_file"
-        else
-            err "Quickshell is required to open settings."
-            exit 1
-        fi
+        open_qml_window "${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/Settings.qml" "settings window"
         ;;
     emoji)
-        emoji_file="${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/EmojiPicker.qml"
-        if [[ ! -r "$emoji_file" ]]; then
-            err "Emoji picker is not installed at $emoji_file. Run hyprmono install first."
-            exit 1
-        fi
-        if command -v quickshell >/dev/null 2>&1; then
-            quickshell -n -p "$emoji_file"
-        elif command -v qs >/dev/null 2>&1; then
-            qs -n -p "$emoji_file"
-        else
-            err "Quickshell is required to open the emoji picker."
-            exit 1
-        fi
+        open_qml_window "${XDG_CONFIG_HOME:-$HOME/.config}/hyprmono/EmojiPicker.qml" "emoji picker"
         ;;
     performance)
         run_repo_script performance.sh "${@:2}"

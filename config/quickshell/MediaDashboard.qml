@@ -11,7 +11,6 @@ PanelWindow {
     property var player
     signal dismissed()
 
-    screen: Quickshell.screens[0]
     anchors {
         top: true
         bottom: true
@@ -44,6 +43,21 @@ PanelWindow {
         color: "#0b0b0b"
         border.width: 1
         border.color: "#414141"
+        opacity: root.visible ? 1 : 0
+        scale: root.visible ? 1 : 0.96
+        transformOrigin: Item.Center
+
+        Behavior on opacity {
+            UiAnimation {
+                duration: 220
+            }
+        }
+
+        Behavior on scale {
+            UiAnimation {
+                duration: 220
+            }
+        }
 
         MouseArea {
             anchors.fill: parent

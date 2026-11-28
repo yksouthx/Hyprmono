@@ -2,8 +2,10 @@
 
 set -Eeuo pipefail
 
-readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly TEMP_DIR="$(mktemp -d)"
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT
+TEMP_DIR="$(mktemp -d)"
+readonly TEMP_DIR
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
 mkdir -p "$TEMP_DIR/config/hyprmono" "$TEMP_DIR/bin"

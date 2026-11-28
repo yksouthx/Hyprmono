@@ -2,8 +2,15 @@
 
 set -Eeuo pipefail
 
-readonly REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly TEMP_DIR="$(mktemp -d)"
+if [[ $EUID -eq 0 ]]; then
+    echo "SKIP: the installer scripts refuse to run as root; run this test as a normal user"
+    exit 0
+fi
+
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly REPO_ROOT
+TEMP_DIR="$(mktemp -d)"
+readonly TEMP_DIR
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
 mkdir -p "$TEMP_DIR/bin" "$TEMP_DIR/home"
@@ -13,7 +20,7 @@ exit 1
 EOF
 chmod +x "$TEMP_DIR/bin/pacman"
 
-for component in fish waybar rofi dunst fuzzel wofi swaync wlogout swaylock kde-material-you-colors; do
+for component in fish waybar rofi dunst wofi swaync wlogout swaylock kde-material-you-colors; do
     if [[ -d "$REPO_ROOT/config/$component" ]] &&
         [[ -n "$(find "$REPO_ROOT/config/$component" -type f -print -quit)" ]]; then
         printf 'Legacy component config remains: %s\n' "$component" >&2
@@ -48,7 +55,14 @@ grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy hypr to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy hyprmono to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy caelestia to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
-! grep -Eq 'Dry run: would install missing packages:.*(waybar|rofi|dunst|fuzzel|wofi|swaync|wlogout|swaylock|hyprpaper|network-manager-applet)' "$TEMP_DIR/minimal.out"
+! grep -Eq 'Dry run: would install missing packages:.*(waybar|rofi|dunst|wofi|swaync|wlogout|swaylock|hyprpaper)' "$TEMP_DIR/minimal.out"
+# The project shell ships its own bar; fuzzel (launcher), fnott (notifications) and the
+# network applet (shown from the bar's tray) are part of every profile.
+grep -Eq 'Dry run: would install missing packages:.*fuzzel' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*fnott' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*network-manager-applet' "$TEMP_DIR/minimal.out"
+grep -q "Dry run: would deploy fuzzel to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
+grep -q "Dry run: would deploy fnott to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 
 run_profile standard
 grep -q 'Dry run: would install missing packages:.*fastfetch' "$TEMP_DIR/standard.out"
@@ -59,12 +73,12 @@ run_profile extended
 grep -q 'Dry run: would install missing packages:.*fastfetch yazi' "$TEMP_DIR/extended.out"
 grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/extended.out"
 grep -q 'Dry run: would deploy fastfetch' "$TEMP_DIR/extended.out"
-! grep -Eq 'would (install missing packages|deploy).*(waybar|rofi|dunst|swaync|wlogout|fuzzel|wofi)' "$TEMP_DIR/extended.out"
+! grep -Eq 'would (install missing packages|deploy).*(waybar|rofi|dunst|swaync|wlogout|wofi)' "$TEMP_DIR/extended.out"
 
 run_profile custom
 grep -q 'Skipping unselected optional fastfetch configuration.' "$TEMP_DIR/custom.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(fish|fastfetch|yazi)' "$TEMP_DIR/custom.out"
-! grep -Eq 'would (install missing packages|deploy).*(waybar|rofi|dunst|swaync|wlogout|fuzzel|wofi)' "$TEMP_DIR/custom.out"
+! grep -Eq 'would (install missing packages|deploy).*(waybar|rofi|dunst|swaync|wlogout|wofi)' "$TEMP_DIR/custom.out"
 
 cat > "$TEMP_DIR/bin/fc-cache" <<'EOF'
 #!/usr/bin/env bash
