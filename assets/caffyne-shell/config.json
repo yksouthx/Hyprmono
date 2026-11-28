@@ -1,0 +1,59 @@
+{
+  "bars": {
+    "configs": [
+      {
+        "monitor": 0,
+        "bars": [
+          {
+            "alignment": "top",
+            "floating_bar": true,
+            "floating_applets": true,
+            "rounded_edges": true,
+            "min_width": false,
+            "auto_hide": false,
+            "left": [
+              "Dash",
+              {"widget": "Launcher", "variant": "icon"},
+              {"widget": "Workspaces", "variant": "icon"},
+              "Focused",
+              {"widget": "Processes", "variant": "scale"},
+              {"widget": "RAM", "variant": "icon+label"},
+              "Media"
+            ],
+            "center": ["Clock"],
+            "right": [
+              "Tray",
+              "Wifi",
+              {"widget": "Volume", "variant": "icon+label"},
+              {"widget": "Brightness", "variant": "icon+label"},
+              {"widget": "Energy", "variant": "icon+label"},
+              {"widget": "Settings", "variant": "single"},
+              "Notifications"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "theme": {
+    "light_theme": "catppuccin-latte",
+    "dark_theme": "catppuccin-mocha",
+    "active_accent": "accent4",
+    "is_dark": true,
+    "scheme_type": "scheme-tonal-spot",
+    "opacity": 0.96,
+    "blur": true,
+    "border_style": "medium",
+    "font_monospace_style": "none"
+  },
+  "wallpaper": {
+    "path": "__HYPRMONO_WALLPAPER__"
+  },
+  "idle_timeouts": {
+    "list": [
+      {"name": "screen-off", "timeout_ac": 10, "timeout_bat": 2, "enabled": true},
+      {"name": "lock", "timeout_ac": 15, "timeout_bat": 5, "enabled": true},
+      {"name": "suspend", "timeout_ac": 15, "timeout_bat": 10, "enabled": true}
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 <div align="center">
   <h1 align="center">H Y P R M O N O</h1>
   <p align="center">
-    <b>A dark fantasy, high-contrast monochrome Hyprland environment.</b><br>
+    <b>A dark fantasy, high-contrast monochrome Niri environment.</b><br>
     <i>Inspired by the modularity of the HyDE Project. Designed for visual silence and lethal efficiency.</i>
   </p>
 </div>
@@ -26,25 +26,22 @@
 
 ## Contents
 
-HyprMono pairs a current Lua-configured Hyprland setup with a project-owned,
-modular Quickshell bar and media dashboard. The bar brings together
-workspaces/active window, a compact MPRIS media pill, clock, memory monitor,
-system tray and quick audio settings. The expanded media panel provides
-artwork, track details, seeking, playback, shuffle, repeat and player volume.
-The existing Caelestia shell configuration remains available as a startup
-fallback. HyprMono does not copy Lyne Dots code or assets; the media layout is
-an original implementation informed by the
-[GPL-3.0-licensed Lyne Dots reference](https://github.com/caioax/lyne-dots).
-See [bar and media dashboard documentation](docs/media-bar.md) for the module
-layout and optional CAVA setting.
+HyprMono pairs a modular Niri setup with
+[Caffyne Shell](https://github.com/caffyne-org/caffyne-shell), a GTK/Python
+desktop shell built on Fabric. Caffyne provides the bar, applets, control hub,
+workspace integration and desktop theming. Its upstream repository is cloned
+into `~/.config/caffyne-shell` by the installer and launched by
+`start-shell.sh`. HyprMono applies a fresh floating-bar theme and replaces the
+bar's media widget with a CAVA-backed 12-band spectrum while media is playing.
+The Caffyne bar also restores active-window text, CPU/process status, RAM
+percentage and the HyprMono wallpaper.
+The bar uses floating capsule/pill surfaces, rounded widgets, soft shadows and
+a subtle top-lit gloss. Fuzzel uses a translucent charcoal panel with a crisp
+silver edge to match.
 
 The standard profile adds Fastfetch, extended also adds Yazi, and custom asks
-about each optional app. A small on-demand Quickshell emoji picker is available
-with `Super + Shift + E` or `hyprmono emoji`; it uses `wl-clipboard` to copy
-selections. `--full-ui` remains an alias for extended. Hyprland also has selectable compositor profiles:
-`low-resource` disables blur, shadows and animations; `balanced` uses reduced
-blur and shadows with animations enabled; `full-visual` keeps the default
-visual effects.
+about each optional app. Caffyne's launcher is available with
+`Super + Shift + E` or `hyprmono emoji`. `--full-ui` remains an alias for extended.
 
 ---
 
@@ -52,11 +49,10 @@ visual effects.
 
 | Component | Description |
 | :--- | :--- |
-| **Hyprland** | Current official Lua-based configuration, split into a main module and user overrides. |
-| **Quickshell** | Lightweight runtime for the project-owned bar and media dashboard. |
-| **Hyprlock** | Clean, high-contrast lock screen with Nothing OS typography. |
+| **Niri** | Modular KDL configuration with a user override file. |
+| **Caffyne Shell** | GTK/Fabric desktop shell and applet runtime. |
+| **Swaylock** | High-contrast session lock screen. |
 | **Kitty** | GPU-accelerated terminal with a custom grayscale theme. |
-| **Caelestia** | Optional compatibility fallback shell. |
 | **Calm-shell** | Preferred terminal shell, built from `yksouthx/calm-shell`. |
 
 ---
@@ -82,12 +78,9 @@ are backed up under `~/.local/state/Hyprmono/migration-backups/`; packages are
 never removed without an explicit per-package approval. Shared packages are
 preserved. `--yes` does not approve cleanup.
 
-When launched without arguments in a Wayland session, the installer opens a
-wallpaper-centered Quickshell/QML window with an animated progress line when
-Quickshell and a supported terminal are available. Detailed logs and cleanup
-approvals run in that terminal. Otherwise the installer falls back to the
-terminal interface; `--terminal` selects it explicitly. The QML is interpreted
-directly and requires no build step.
+When launched with `--terminal`, the installer uses the text interface explicitly.
+Wayland setup and package prompts are handled in the terminal; Caffyne Shell is
+cloned and configured after package setup.
 
 Use `--profile minimal|standard|extended|custom` to choose an installation
 profile. The `custom` profile asks separately about each optional package and
@@ -104,15 +97,33 @@ packages or configuration:
 ./install.sh --dry-run
 ```
 
+To test a minimal deployment in an active Niri session without installing
+packages or cleaning/migrating other components, run:
+
+```bash
+./test_install.sh
+```
+
+It reloads Niri with the deployed configuration and starts Caffyne Shell for a
+short smoke test. If Niri or Caffyne Shell reports an error, the script restores
+the files that existed before the test and reloads the previous Niri
+configuration. A successful test leaves HyprMono installed.
+Each run saves its full output to a unique, owner-only
+`~/Desktop/hyprmono-test-install-*.log` file.
+
+The smoke test rolls back on startup errors, missing Python resources, or an
+unexpected process exit.
+
 Existing managed configs are backed up to `~/.config-backup-<timestamp>/`
 before deployment. The minimal profile is the default. Standard adds Fastfetch; `--full-ui`
 selects extended and also adds Yazi. No profile installs a duplicate bar.
+On upgrades, a previous HyprMono-managed `~/.config/hypr` is backed up and
+removed; unrelated, untracked configs are left alone.
 
 Every profile installs two small companions for the HyprMono shell, themed to
 match it (`config/fuzzel/`, `config/fnott/`):
 
-- **fuzzel** is the application launcher (`Super + R`). When Caelestia is
-  running, `Super + R` opens Caelestia's launcher instead.
+- **fuzzel** is the application launcher (`Super + R`).
 - **fnott** is the notification daemon, started with the session when the
   HyprMono shell is installed and no other daemon already owns
   `org.freedesktop.Notifications`.
@@ -129,45 +140,39 @@ wipe mode. Existing managed directories are backed up before they are removed:
 bash scripts/install.sh --wipe
 ```
 
-Calm-shell is built from [yksouthx/calm-shell](https://github.com/yksouthx/calm-shell) and installed to `~/.local/bin/calm`. The Hyprland terminal launcher uses it by default and falls back to Kitty if it is unavailable.
+Calm-shell is built from [yksouthx/calm-shell](https://github.com/yksouthx/calm-shell) and installed to `~/.local/bin/calm`. The Niri terminal launcher uses it by default and falls back to Kitty if it is unavailable.
 
-When `paru` or `yay` is available, the installer offers the official
-[Caelestia CLI](https://aur.archlinux.org/packages/caelestia-cli) and
-[Caelestia shell](https://aur.archlinux.org/packages/caelestia-shell)
-packages. The shell package supplies the upstream QML, icons, animations,
-fonts, and runtime assets; HyprMono only keeps the local integration config
-and wallpaper. Use `--skip-aur` to omit this step.
+When `paru` or `yay` is available, the installer offers
+[`fabric-cli-git`](https://aur.archlinux.org/packages/fabric-cli-git), required
+for Caffyne Shell IPC. Use `--skip-aur` to omit this step.
 
-Repository configuration is grouped by application: Hyprland sources are in
-`config/Hyprland/hypr/` and Quickshell sources are in `config/quickshell/`. The
-installer maps these to the conventional runtime directories
-`~/.config/hypr/` and `~/.config/hyprmono/`.
+Repository configuration is grouped by application: Niri sources are in
+`config/Niri/niri/`,
+Caffyne design assets are in `assets/caffyne-shell/`,
+and companion app configs are in `config/`. Caffyne itself is cloned to
+`~/.config/caffyne-shell/`.
 
-HyprMono follows the current Hyprland Lua configuration API. The installed entrypoint is
-`~/.config/hypr/hyprland.lua`; the monochrome palette lives in
-`~/.config/hypr/modules/colours.lua`, and personal changes belong in
-`~/.config/hypr/custom/*.lua`, which are loaded after the defaults. This avoids mixing
-the legacy native `.conf` syntax with the current official wiki format.
+The installer can also install a custom monochrome SDDM login screen from
+`assets/sddm/hyprmono/`, enable `sddm.service`, and use the Wayland greeter
+backend. Existing SDDM theme and configuration files are preserved for
+uninstallation. The package and system integration are skipped with
+`--skip-deps` or `--skip-pkgs`.
+
+The Niri setup is named **NiriMono** and is split into focused files, with
+`config.kdl` as the entrypoint: `environment.kdl`, `input.kdl`, `layout.kdl`,
+`monitors.kdl`, `rules.kdl`, `workspaces.kdl`, `animations.kdl`, `execs.kdl`,
+`keybinds.kdl`, and `custom.kdl`. It uses the system's XCursor theme.
+Screenshots are saved to
+`~/Pictures/NiriMono/`.
 
 ---
 
 ## ◈ Profiles, Migration & Recovery
 
-Switch the Hyprland compositor between visual modes:
+Open Caffyne Shell quick settings with `Super + I` or `hyprmono settings`.
+Niri settings can be customized in `~/.config/niri/custom.kdl`.
 
-```bash
-hyprmono profile low-resource
-hyprmono profile balanced
-hyprmono profile full-visual
-hyprmono profile show
-```
-
-Open the graphical performance settings window with `Super + I` or
-`hyprmono settings`. The current window manages compositor performance
-profiles; advanced Hyprland configuration remains editable in
-`~/.config/hypr/custom/`.
-
-Review shell components that can be replaced by Quickshell without running
+Review shell components that can be replaced by Caffyne Shell without running
 the installer:
 
 ```bash
@@ -198,14 +203,13 @@ hyprmono [command]
 
 Available commands:
 - `install`: Run the main installation script.
-- `reinstall`: Fresh clone from GitHub and redeploy all configs (previous configs are backed up; `hypr/custom` is kept).
+- `reinstall`: Fresh clone from GitHub and redeploy all configs (previous configs are backed up; `niri/custom.kdl` is kept).
 - `uninstall`: Remove all HyprMono configurations.
 - `update`: Pull latest changes and sync configurations.
 - `audit`: Perform a system check for dependencies.
 - `migrate`: Review duplicate bar/shell components and restore migration backups.
-- `profile`: Switch `low-resource` / `balanced` / `full-visual` compositor modes.
-- `settings`: Open the graphical performance settings window.
-- `emoji`: Open the Quickshell emoji picker.
+- `settings`: Toggle the Caffyne Shell settings applet.
+- `emoji`: Pick and copy an emoji with Fuzzel.
 
 
 ---
@@ -216,19 +220,16 @@ Available commands:
 ~/.local/share/Hyprmono/
 ├── assets/
 │   ├── fonts/
+│   ├── caffyne-shell/
 │   └── wall.webp
 ├── config/
-│   ├── installer/
-│   ├── hyprmono/
-│   ├── hypr/
-│   ├── caelestia/
+│   ├── Niri/
 │   ├── calm-shell/
 │   └── ...
 ├── scripts/
 │   ├── hyprmono.sh
 │   ├── migrate.sh
 │   ├── performance.sh
-│   ├── profile.sh
 │   ├── run-installer-terminal
 │   └── install.sh
 └── (installer links scripts/hyprmono.sh to ~/.local/bin/hyprmono)

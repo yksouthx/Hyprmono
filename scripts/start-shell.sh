@@ -1,25 +1,18 @@
 #!/usr/bin/env bash
-# Start HyprMono's own Quickshell UI, with Caelestia as a compatibility fallback.
+# Start Caffyne Shell, HyprMono's desktop-shell runtime.
 set -u
 
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
-shell_file="$config_home/hyprmono/shell.qml"
-
-if [[ -r "$shell_file" ]]; then
-    if command -v quickshell >/dev/null 2>&1; then
-        exec quickshell -n -p "$shell_file" -d
-    fi
-    if command -v qs >/dev/null 2>&1; then
-        exec qs -n -p "$shell_file" -d
-    fi
+caffyne_start="$config_home/caffyne-shell/start.sh"
+if [[ -x "$caffyne_start" ]]; then
+    exec "$caffyne_start"
 fi
 
-if command -v caelestia >/dev/null 2>&1; then
-    exec caelestia shell -d
-fi
-
-if command -v qs >/dev/null 2>&1 && [[ -d "$config_home/quickshell/caelestia" ]]; then
-    exec qs -c caelestia -n -d
+# Compatibility launcher for installations that use Caffyne's legacy clone layout.
+caffyne_clone="$config_home/caffyne-shell/main.py"
+caffyne_venv="$config_home/caffyne-shell/venv/bin/python"
+if [[ -r "$caffyne_clone" && -x "$caffyne_venv" ]]; then
+    exec "$caffyne_venv" "$caffyne_clone"
 fi
 
 exit 0

@@ -8,7 +8,7 @@ cd "$REPO_ROOT"
 # Every script must parse.
 while IFS= read -r file; do
     bash -n "$file"
-done < <(find install.sh scripts tests -type f \( -name '*.sh' -o -name run-installer-terminal \))
+done < <(find install.sh test_install.sh scripts tests -type f \( -name '*.sh' -o -name run-installer-terminal \))
 
 # Scripts the installer runs directly must be executable in git.
 if git rev-parse --git-dir >/dev/null 2>&1; then
@@ -18,7 +18,7 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
             echo "not executable in git: $file ($mode)" >&2
             exit 1
         fi
-    done < <(find install.sh scripts -type f \( -name '*.sh' -o -name run-installer-terminal \))
+    done < <(find install.sh test_install.sh scripts -type f \( -name '*.sh' -o -name run-installer-terminal \))
 fi
 
 # Nothing may depend on HyDE's hyde-shell runner.
@@ -37,7 +37,7 @@ fi
 
 # The linter must be clean at warning level when it is available.
 if command -v shellcheck >/dev/null 2>&1; then
-    shellcheck -S warning install.sh scripts/* tests/*.sh
+    shellcheck -S warning install.sh test_install.sh scripts/* tests/*.sh
 else
     echo "note: shellcheck not installed, skipped"
 fi

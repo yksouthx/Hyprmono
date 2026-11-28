@@ -33,20 +33,20 @@ For optimal performance, smooth animations, and heavy multitasking.
 The installation script (`install.sh`) will attempt to install these automatically via `pacman`.
 
 ### Core Packages
-- `hyprland`: The tiling compositor.
-- `quickshell`: Lightweight shell runtime for the project-owned bar and media UI.
+- `niri`: The scrollable-tiling Wayland compositor.
+- `caffyne-shell`: GTK/Fabric desktop shell runtime, installed from GitHub.
+- `cava`: Audio visualizer for the bar music element.
 - `kitty`: Terminal emulator.
-- `hyprlock`: Screen locker.
-- `hypridle`: Idle management daemon.
+- `swaylock`: Screen locker.
+- `swayidle`: Idle management daemon when Caffyne Shell is unavailable.
 - `calm-shell`: Preferred interactive terminal shell, built by the installer from `https://github.com/yksouthx/calm-shell.git`.
 
 ### Shell and optional packages
 
-If `paru` or `yay` is installed, the installer offers `caelestia-cli` and
-`caelestia-shell` as a compatibility fallback. Pass `--skip-aur` to skip AUR
-setup. CAVA is optional and is only started when playback is active and
-`cavaVisualizerEnabled` is enabled in `~/.config/hyprmono/shell.qml`. Without
-CAVA, the media pill uses a static low-resource indicator.
+Caffyne Shell installs through its upstream repository and uses Fabric CLI from
+the AUR when available. CAVA is installed as a core package and starts only
+when an MPRIS player is actively playing. Without CAVA, the bar media widget
+uses a static music indicator.
 
 Fastfetch and Yazi are optional: minimal installs neither, standard adds
 Fastfetch, extended adds both, and custom asks about each independently.
@@ -58,7 +58,7 @@ Fish is not part of the project configuration.
 - `pipewire` / `wireplumber`: Audio backend.
 - `brightnessctl` / `playerctl`: Hardware controls.
 - `polkit-kde-agent`: Authentication agent.
-- `xdg-desktop-portal-hyprland`: Wayland portal.
+- `xdg-desktop-portal-gnome` and `xdg-desktop-portal-gtk`: Wayland portals.
 - `cmake`, `ninja`, `gcc`, and `git`: Build and source prerequisites for Calm-shell.
 
 Use `./install.sh --dry-run` to preview the system scan and deployment plan.
@@ -85,15 +85,13 @@ config directories. The installer creates a timestamped backup before wiping.
 ## ◈ Hardware Compatibility Notes
 
 - **NVIDIA Users:** Ensure you have the latest proprietary drivers (`nvidia` or `nvidia-open-dkms`) and have enabled DRM kernel mode setting.
-- **Laptops:** Battery and brightness controls are available from the Caelestia fallback; the project-owned quick settings currently provides audio output control.
+- **Laptops:** Battery and brightness controls are available from Caffyne Shell's quick settings applets.
 - **Wallpaper formats:** The shell wallpaper (`assets/wall.webp`) needs `qt6-imageformats`, which the installer includes.
-- **Multi-Monitor:** Hyprland handles multi-monitor setups natively; add a monitor rule in `config/Hyprland/hypr/hyprland.lua` to customize your layout.
+- **Multi-Monitor:** Niri automatically detects connected outputs. Add output-specific mode, scale, transform, or position rules in `config/Niri/niri/monitors.kdl`.
 
-## Quickshell bar and Caelestia fallback
+## Caffyne Shell
 
-HyprMono's bar and media UI sources are implemented in `config/quickshell/`
-and installed to `~/.config/hyprmono/`. The Caelestia configuration source is
-`config/quickshell/caelestia/shell.json` and is installed to `~/.config/caelestia/`.
-Caelestia starts as a fallback if the project-owned Quickshell entry point is
-unavailable. The startup hook remains guarded so the compositor can still
-start if neither shell is installed.
+Caffyne Shell replaces the legacy Quickshell UI. The installer clones its
+upstream repository to `~/.config/caffyne-shell`, creates a Python virtual
+environment, installs Python dependencies, and starts `start.sh` through
+`start-shell.sh`.

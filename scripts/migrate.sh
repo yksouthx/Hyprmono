@@ -63,13 +63,13 @@ add_path_candidate() {
 
 scan_paths() {
     local name root
-    # Only bars / shell frameworks are duplicates of the HyprMono Quickshell bar.
+    # Only bars / shell frameworks are duplicates of the Caffyne Shell bar.
     # Launchers, notification daemons, wallpaper tools, lock screens and tray
     # applets are NOT replaced by it, so they are deliberately never listed.
     for root in "${CONFIG_ROOTS[@]}"; do
         for name in waybar hyprpanel eww ags; do
             add_path_candidate "$root/$name" \
-                "$name configuration (an existing bar / desktop-shell layer; the HyprMono Quickshell bar replaces it)" config
+                "$name configuration (an existing bar / desktop-shell layer; Caffyne Shell replaces it)" config
         done
     done
 
@@ -113,8 +113,8 @@ scan_packages() {
 
 package_reason() {
     case "$1" in
-        waybar) printf '%s' "status bar replaced by the HyprMono Quickshell bar" ;;
-        eww|aylurs-gtk-shell|hyprpanel) printf '%s' "desktop-shell/widget framework alternative to the Quickshell shell" ;;
+        waybar) printf '%s' "status bar replaced by Caffyne Shell" ;;
+        eww|aylurs-gtk-shell|hyprpanel) printf '%s' "desktop-shell/widget framework alternative to Caffyne Shell" ;;
         *) printf '%s' "known optional desktop-shell component" ;;
     esac
 }

@@ -1,0 +1,10 @@
+// Add monitor-specific output blocks here as needed.
+// Niri detects unconfigured monitors automatically.
+//
+// Example:
+// output "DP-1" {
+//     mode "3840x2160@60.000"
+//     scale 1
+//     transform "normal"
+//     position x=0 y=0
+// }

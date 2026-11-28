@@ -1,0 +1,18 @@
+// NiriMono desktop configuration
+//
+// Personal changes belong in custom.kdl. This entrypoint keeps defaults
+// modular by concern.
+
+prefer-no-csd
+screenshot-path "~/Pictures/NiriMono/Screenshot-%Y-%m-%d_%H-%M-%S.png"
+
+include "environment.kdl"
+include "input.kdl"
+include "layout.kdl"
+include "monitors.kdl"
+include "rules.kdl"
+include "workspaces.kdl"
+include "animations.kdl"
+include "execs.kdl"
+include "keybinds.kdl"
+include "custom.kdl"

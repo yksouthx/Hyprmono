@@ -22,7 +22,6 @@ unset XDG_CONFIG_HOME
 mkdir -p "$HOME/.config/hypr" "$HOME/.config/hyprmono" "$HOME/.config/fish" "$HOME/.config/rofi" \
     "$HOME/.local/bin" "$HOME/.cache/Hyprmono"
 echo deployed > "$HOME/.config/hypr/hyprland.lua"
-echo shell > "$HOME/.config/hyprmono/shell.qml"
 echo "user fish config" > "$HOME/.config/fish/config.fish"
 echo "user rofi config" > "$HOME/.config/rofi/config.rasi"
 for name in hyprmono.sh start-shell.sh start-idle.sh launch-menu.sh lock-screen.sh; do

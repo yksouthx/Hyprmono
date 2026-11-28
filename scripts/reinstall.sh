@@ -43,7 +43,7 @@ main() {
     printf '%bHyprMono Fresh Reinstallation%b\n' "${BOLD}" "${RESET}"
     printf 'This replaces the repository checkout and re-deploys all managed configs.\n'
     printf 'Existing configs are backed up to ~/.config-backup-<timestamp> first;\n'
-    printf 'your hypr/custom overrides are kept.\n\n'
+    printf 'your niri/custom.kdl override is kept.\n\n'
 
     if [[ $EUID -eq 0 ]]; then
         err "Do not run this script as root."

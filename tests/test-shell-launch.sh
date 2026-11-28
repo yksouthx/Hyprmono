@@ -8,18 +8,21 @@ TEMP_DIR="$(mktemp -d)"
 readonly TEMP_DIR
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
-mkdir -p "$TEMP_DIR/bin" "$TEMP_DIR/config/hyprmono"
-touch "$TEMP_DIR/config/hyprmono/shell.qml"
+grep -q '^bars = 12$' "$REPO_ROOT/assets/caffyne-shell/cava.conf"
+grep -q 'bar-cava' "$REPO_ROOT/assets/caffyne-shell/hyprmono.css"
+grep -q 'border-radius: 999px' "$REPO_ROOT/assets/caffyne-shell/hyprmono.css"
+grep -q '_read_cava' "$REPO_ROOT/assets/caffyne-shell/media.py"
+grep -q '"Focused"' "$REPO_ROOT/assets/caffyne-shell/config.json"
+grep -q '"Processes"' "$REPO_ROOT/assets/caffyne-shell/config.json"
+grep -q '"RAM"' "$REPO_ROOT/assets/caffyne-shell/config.json"
+grep -q '__HYPRMONO_WALLPAPER__' "$REPO_ROOT/assets/caffyne-shell/config.json"
 
-cat > "$TEMP_DIR/bin/quickshell" <<'EOF'
+mkdir -p "$TEMP_DIR/bin" "$TEMP_DIR/config/caffyne-shell"
+cat > "$TEMP_DIR/config/caffyne-shell/start.sh" <<'EOF'
 #!/usr/bin/env bash
-printf '%s\n' "$@" > "$CAPTURE"
+printf 'caffyne shell started\n' > "$CAPTURE"
 EOF
-cat > "$TEMP_DIR/bin/caelestia" <<'EOF'
-#!/usr/bin/env bash
-printf 'caelestia %s\n' "$*" > "$CAPTURE"
-EOF
-chmod +x "$TEMP_DIR/bin/quickshell" "$TEMP_DIR/bin/caelestia"
+chmod +x "$TEMP_DIR/config/caffyne-shell/start.sh"
 
 HOME="$TEMP_DIR" \
 XDG_CONFIG_HOME="$TEMP_DIR/config" \
@@ -27,17 +30,14 @@ PATH="$TEMP_DIR/bin:$PATH" \
 CAPTURE="$TEMP_DIR/launch.out" \
     bash "$REPO_ROOT/scripts/start-shell.sh"
 
-[[ "$(sed -n '1p' "$TEMP_DIR/launch.out")" == "-n" ]]
-[[ "$(sed -n '2p' "$TEMP_DIR/launch.out")" == "-p" ]]
-[[ "$(sed -n '3p' "$TEMP_DIR/launch.out")" == "$TEMP_DIR/config/hyprmono/shell.qml" ]]
-[[ "$(sed -n '4p' "$TEMP_DIR/launch.out")" == "-d" ]]
-
-rm "$TEMP_DIR/config/hyprmono/shell.qml"
+rm "$TEMP_DIR/config/caffyne-shell/start.sh"
 HOME="$TEMP_DIR" \
 XDG_CONFIG_HOME="$TEMP_DIR/config" \
 PATH="$TEMP_DIR/bin:$PATH" \
-CAPTURE="$TEMP_DIR/fallback.out" \
+CAPTURE="$TEMP_DIR/no-shell.out" \
     bash "$REPO_ROOT/scripts/start-shell.sh"
-grep -q '^caelestia shell -d$' "$TEMP_DIR/fallback.out"
 
-printf 'Quickshell startup and Caelestia fallback passed.\n'
+grep -q '^caffyne shell started$' "$TEMP_DIR/launch.out"
+[[ ! -e "$TEMP_DIR/no-shell.out" ]]
+
+printf 'Caffyne Shell startup passed.\n'

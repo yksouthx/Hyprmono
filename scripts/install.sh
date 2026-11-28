@@ -131,7 +131,7 @@ usage() {
     cat <<'EOF'
 Usage: ./install.sh [OPTIONS]
 
-Install HyprMono; opens the Quickshell window on supported Wayland sessions.
+Install HyprMono; uses Caffyne Shell for the desktop UI.
 
 Options:
   --terminal          Use the terminal installer explicitly
@@ -245,9 +245,13 @@ resolve_repo_root() {
 PACMAN_PACKAGES=(
     qt6-imageformats fuzzel fnott network-manager-applet
     git
-    hyprland hyprlock hypridle kitty
-    quickshell
-    xdg-desktop-portal-hyprland xdg-user-dirs polkit-kde-agent
+    niri swayidle swaylock sddm kitty
+    gtk3 cairo libgirepository gobject-introspection gtk-layer-shell
+    libdbusmenu-gtk3 cinnamon-desktop gnome-bluetooth-3.0 gtk-session-lock
+    matugen playerctl brightnessctl wf-recorder upower cava
+    networkmanager bluez python python-pip awww base-devel
+    xdg-desktop-portal-gnome xdg-desktop-portal-gtk
+    xdg-desktop-portal-wlr gnome-keyring xdg-user-dirs polkit-kde-agent
     ttf-firacode-nerd ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji
     brightnessctl playerctl wireplumber pipewire-pulse wl-clipboard
 )
@@ -257,10 +261,8 @@ CALM_BUILD_PACKAGES=(cmake ninja gcc)
 CONFIG_SOURCES=()
 CONFIG_TARGETS=()
 
-# The shell package carries Caelestia's upstream QML, icons, animations, and
-# fonts. Keep these in the AUR package instead of copying upstream assets into
-# HyprMono, so the shell and its resources stay version-matched.
-CAELESTIA_AUR_PACKAGES=(caelestia-cli caelestia-shell)
+# Caffyne Shell uses Fabric CLI; keep it in the AUR layer.
+CAFFYNE_AUR_PACKAGES=(fabric-cli-git)
 
 select_profile_components() {
     local package
@@ -313,17 +315,9 @@ collect_config_deployments() {
     for folder_path in "$source_config"/*/; do
         folder_name=$(basename "${folder_path%/}")
         case "$folder_name" in
-            Hyprland)
-                CONFIG_SOURCES+=("$folder_path/hypr")
-                CONFIG_TARGETS+=(hypr)
-                ;;
-            quickshell)
-                CONFIG_SOURCES+=("$folder_path")
-                CONFIG_TARGETS+=(hyprmono)
-                if [[ -d "$folder_path/caelestia" ]]; then
-                    CONFIG_SOURCES+=("$folder_path/caelestia")
-                    CONFIG_TARGETS+=(caelestia)
-                fi
+            Niri)
+                CONFIG_SOURCES+=("$folder_path/niri")
+                CONFIG_TARGETS+=(niri)
                 ;;
             installer)
                 # The installer window runs from the repository; it is not a user config.
@@ -444,8 +438,8 @@ run_environment_tests() {
     fi
 
     if [[ -d "$REPO_ROOT/config" &&
-        -f "$REPO_ROOT/config/Hyprland/hypr/hyprland.lua" &&
-        -f "$REPO_ROOT/config/quickshell/shell.qml" &&
+        -f "$REPO_ROOT/config/Niri/niri/config.kdl" &&
+        -f "$REPO_ROOT/scripts/install-caffyne-shell.sh" &&
         -f "$REPO_ROOT/scripts/migrate.sh" ]]; then
         ok "Required repository files are present"
     else
@@ -524,7 +518,7 @@ install_packages() {
                 ok "Package installation finished."
             else
                 err "Pacman failed to install some packages (see $LOGFILE)."
-                info "If you need Caelestia shell packages, use an AUR helper (yay/paru) or pass --skip-aur."
+                info "If you need Caffyne Shell packages, use an AUR helper (yay/paru) or pass --skip-aur."
                 return 1
             fi
         fi
@@ -551,28 +545,28 @@ install_aur_packages() {
 
     local helper
     if ! helper=$(find_aur_helper); then
-        warn "Neither paru nor yay was found; Caelestia shell and its official asset bundle were not installed."
+        warn "Neither paru nor yay was found; Caffyne Shell Fabric CLI was not installed."
         info "Install an AUR helper, then run this installer again, or use --skip-aur."
         return 0
     fi
 
     if [[ "$DRY_RUN" -eq 1 ]]; then
-        info "Dry run: would install ${CAELESTIA_AUR_PACKAGES[*]} with $helper."
+        info "Dry run: would install ${CAFFYNE_AUR_PACKAGES[*]} with $helper."
         return 0
     fi
 
     info "Using AUR helper: $helper"
-    if ask "Install Caelestia shell and CLI from the AUR with $helper?" y; then
-        ("$helper" -S --needed --noconfirm "${CAELESTIA_AUR_PACKAGES[@]}" &>>"$LOGFILE") &
+    if ask "Install Caffyne Shell CLI dependencies from the AUR with $helper?" y; then
+        ("$helper" -S --needed --noconfirm "${CAFFYNE_AUR_PACKAGES[@]}" &>>"$LOGFILE") &
         local aur_pid=$!
-        spinner "$aur_pid" "Installing Caelestia and its upstream assets..."
+        spinner "$aur_pid" "Installing Caffyne Shell Fabric CLI..."
         if wait "$aur_pid"; then
-            ok "Caelestia shell, CLI, and bundled assets installed."
+            ok "Caffyne Shell Fabric CLI installed."
         else
-            warn "AUR helper failed to install Caelestia packages (see $LOGFILE); continuing with config deployment."
+            warn "AUR helper failed to install Caffyne packages (see $LOGFILE); continuing with config deployment."
         fi
     else
-        warn "Caelestia AUR setup skipped; the guarded launcher will remain inactive until it is installed."
+        warn "Caffyne AUR setup skipped; the guarded launcher may remain inactive until it is installed."
     fi
 }
 
@@ -602,6 +596,73 @@ backup_local_bin_entry() {
 }
 
 # --- Core Installation ---
+install_sddm_theme() {
+    if [[ "$SKIP_DEPS" -eq 1 || "$SKIP_PKGS" -eq 1 ]]; then
+        info "Skipping SDDM setup because dependency installation is disabled."
+        return 0
+    fi
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        info "Dry run: would install the HyprMono SDDM theme and enable sddm.service."
+        return 0
+    fi
+
+    local theme_source="$REPO_ROOT/assets/sddm/hyprmono"
+    if [[ ! -d "$theme_source" ]]; then
+        warn "HyprMono SDDM theme assets are missing; skipping display-manager setup."
+        return 0
+    fi
+    if ! ask "Install and configure the custom HyprMono SDDM login screen?" y; then
+        warn "Custom SDDM login screen skipped."
+        return 0
+    fi
+
+    if ! has sudo; then
+        warn "sudo is unavailable; skipping custom SDDM login screen."
+        return 0
+    fi
+
+    local backup_root="$HOME/.cache/Hyprmono"
+    local original_theme="$backup_root/sddm-original-theme"
+    local original_conf="$backup_root/sddm-original.conf"
+
+    if [[ -d /usr/share/sddm/themes/hyprmono ]] && [[ ! -e "$original_theme" ]]; then
+        sudo mkdir -p "$backup_root"
+        sudo cp -a /usr/share/sddm/themes/hyprmono "$original_theme"
+    fi
+    if [[ -f /etc/sddm.conf.d/10-hyprmono.conf ]] && [[ ! -e "$original_conf" ]]; then
+        sudo mkdir -p "$backup_root"
+        sudo cp -a /etc/sddm.conf.d/10-hyprmono.conf "$original_conf"
+    fi
+
+    sudo mkdir -p /usr/share/sddm/themes/hyprmono
+    sudo cp -rf "$theme_source/." /usr/share/sddm/themes/hyprmono/
+    sudo chmod 0755 /usr/share/sddm/themes/hyprmono
+    sudo chmod 0644 /usr/share/sddm/themes/hyprmono/*.conf /usr/share/sddm/themes/hyprmono/*.desktop \
+        /usr/share/sddm/themes/hyprmono/*.qml 2>/dev/null || true
+
+    local temporary_conf
+    temporary_conf=$(mktemp)
+    cat > "$temporary_conf" <<'EOF'
+[General]
+DisplayServer=wayland
+GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
+
+[Theme]
+Current=hyprmono
+EOF
+    sudo mkdir -p /etc/sddm.conf.d
+    sudo install -o root -g root -m 0644 "$temporary_conf" /etc/sddm.conf.d/10-hyprmono.conf
+    rm -f -- "$temporary_conf"
+
+    if sudo systemctl enable sddm.service &>>"$LOGFILE"; then
+        mkdir -p "$backup_root"
+        touch "$backup_root/sddm-managed"
+        ok "HyprMono SDDM theme installed and sddm.service enabled."
+    else
+        warn "SDDM theme installed, but sddm.service could not be enabled."
+    fi
+}
+
 install_configs() {
     title "Configuration Deployment"
 
@@ -632,7 +693,19 @@ install_configs() {
     backup_dir="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
     [[ -e "$backup_dir" ]] && backup_dir="${backup_dir}-$$"
     mkdir -p "$backup_dir"
+    if [[ -n "${HYPRMONO_BACKUP_DIR_FILE:-}" ]]; then
+        printf '%s\n' "$backup_dir" > "$HYPRMONO_BACKUP_DIR_FILE"
+    fi
     record_original_backup "$backup_dir"
+
+    local deployed_targets_file="$LOGDIR/deployed-targets"
+    if [[ -s "$deployed_targets_file" ]] &&
+        grep -qxF 'hypr' "$deployed_targets_file" &&
+        [[ -e "$CONFIG_DIR/hypr" || -L "$CONFIG_DIR/hypr" ]]; then
+        \cp -a "$CONFIG_DIR/hypr" "$backup_dir/"
+        rm -rf -- "${CONFIG_DIR:?}/hypr"
+        info "Removed the previous managed Hyprland config; its backup is at $backup_dir/hypr"
+    fi
 
     local index
     for index in "${!CONFIG_SOURCES[@]}"; do
@@ -664,12 +737,10 @@ install_configs() {
             rm -f -- "$dest"
         fi
 
-        # hypr/custom/*.lua are the user's personal overrides: never clobber them
-        # with the empty stubs from the repo, not even in --wipe mode.
         local preserved_custom=""
-        if [[ "$target_name" == hypr && -d "$dest/custom" ]]; then
-            preserved_custom=$(mktemp -d)
-            \cp -a "$dest/custom/." "$preserved_custom/"
+        if [[ "$target_name" == niri && -f "$dest/custom.kdl" ]]; then
+            preserved_custom=$(mktemp)
+            \cp -a "$dest/custom.kdl" "$preserved_custom"
         fi
 
         if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
@@ -681,28 +752,19 @@ install_configs() {
         local entries=("$folder_path"/*)
         local entry
         for entry in "${entries[@]}"; do
-            if [[ "$target_name" == hyprmono && "$(basename "$entry")" == caelestia ]]; then
-                continue
-            fi
             \cp -rf "$entry" "$dest/"
         done
 
         if [[ -n "$preserved_custom" ]]; then
-            mkdir -p "$dest/custom"
-            \cp -a "$preserved_custom/." "$dest/custom/"
-            rm -rf -- "$preserved_custom"
-            info "Preserved your hypr/custom overrides"
+            \cp -a "$preserved_custom" "$dest/custom.kdl"
+            rm -f -- "$preserved_custom"
+            info "Preserved your niri/custom.kdl overrides"
         fi
         log "Deployed $folder_name"
 
         deployed+=("$target_name")
         progress "$count" "$total"
     done
-
-    # Scripts that Hyprland tools execute directly must carry the exec bit.
-    if [[ -d "$CONFIG_DIR/hypr/hyprlock" ]]; then
-        find "$CONFIG_DIR/hypr/hyprlock" -type f -name '*.sh' -exec chmod +x {} +
-    fi
 
     # Record what was deployed so uninstall removes exactly these directories.
     mkdir -p "$LOGDIR"
@@ -726,10 +788,15 @@ install_configs() {
     # Deploy scripts to ~/.local/bin
     title "Script Deployment"
     mkdir -p "$LOCAL_BIN"
+    if [[ -e "$LOCAL_BIN/profile.sh" || -L "$LOCAL_BIN/profile.sh" ]]; then
+        backup_local_bin_entry "profile.sh" "$backup_dir"
+        rm -f -- "$LOCAL_BIN/profile.sh"
+        info "Removed the retired compositor profile helper."
+    fi
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
         # Include tools from earlier releases so a wipe removes stale copies.
         local managed_script
-        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh; do
+        for managed_script in change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyprmono hyprmono.sh install-caffyne-shell.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh; do
             backup_local_bin_entry "$managed_script" "$backup_dir"
             rm -f -- "$LOCAL_BIN/$managed_script"
         done
@@ -760,13 +827,6 @@ install_configs() {
         fi
     done
 
-    # start-caelestia.sh was renamed to start-shell.sh; drop the stale copy.
-    if [[ -e "$LOCAL_BIN/start-caelestia.sh" || -L "$LOCAL_BIN/start-caelestia.sh" ]]; then
-        backup_local_bin_entry "start-caelestia.sh" "$backup_dir"
-        rm -f -- "$LOCAL_BIN/start-caelestia.sh"
-        info "Removed legacy start-caelestia.sh (now start-shell.sh)"
-    fi
-
     # Create 'hyprmono' command symlink
     if [[ -f "$LOCAL_BIN/hyprmono.sh" ]]; then
         backup_local_bin_entry "hyprmono" "$backup_dir"
@@ -777,13 +837,6 @@ install_configs() {
     # Deploy assets
     title "Asset Deployment"
     if [[ -d "$REPO_ROOT/assets" ]]; then
-        if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
-            rm -rf -- "$CONFIG_DIR/hypr/assets"
-        fi
-        mkdir -p "$CONFIG_DIR/hypr/assets"
-        \cp -rf "$REPO_ROOT/assets/"* "$CONFIG_DIR/hypr/assets/"
-        ok "Deployed assets to $CONFIG_DIR/hypr/assets"
-
         if [[ -d "$REPO_ROOT/assets/fonts" ]]; then
             info "Updating font cache..."
             mkdir -p "$HOME/.local/share/fonts"
@@ -852,14 +905,14 @@ validate_installation() {
         return 0
     fi
 
-    if [[ -f "$CONFIG_DIR/hypr/hyprland.lua" ]]; then
-        ok "Hyprland configuration is present."
+    if [[ -f "$CONFIG_DIR/niri/config.kdl" ]]; then
+        ok "Niri configuration is present."
     else
-        warn "Hyprland configuration is missing; configuration deployment may have been skipped."
+        warn "Niri configuration is missing; configuration deployment may have been skipped."
     fi
 
     local script
-    for script in start-shell.sh start-idle.sh start-session-services.sh lock-screen.sh launch-menu.sh migrate.sh performance.sh profile.sh; do
+    for script in start-shell.sh start-idle.sh start-session-services.sh lock-screen.sh launch-menu.sh migrate.sh performance.sh; do
         if [[ -x "$LOCAL_BIN/$script" ]]; then
             ok "Runtime helper is installed: $script"
         else
@@ -873,16 +926,11 @@ validate_installation() {
         warn "hyprmono command link is missing or broken: $LOCAL_BIN/hyprmono"
     fi
 
-    if [[ -r "$CONFIG_DIR/hyprmono/shell.qml" ]]; then
-        ok "HyprMono Quickshell shell is deployed."
+    if [[ -x "$CONFIG_DIR/caffyne-shell/start.sh" ]] ||
+        [[ -r "$CONFIG_DIR/caffyne-shell/main.py" ]]; then
+        ok "Caffyne Shell is ready."
     else
-        warn "HyprMono shell is missing: $CONFIG_DIR/hyprmono/shell.qml"
-    fi
-
-    if has quickshell || has qs; then
-        ok "Quickshell runtime is available."
-    else
-        warn "Quickshell is not installed; install quickshell to enable the desktop UI."
+        warn "Caffyne Shell is not installed; run scripts/install-caffyne-shell.sh manually."
     fi
 
     case ":$PATH:" in
@@ -1023,24 +1071,6 @@ main() {
         return
     fi
 
-    if [[ "$TERMINAL_MODE" -eq 0 && ${#ORIG_ARGS[@]} -eq 0 && -n "${WAYLAND_DISPLAY:-}" ]] &&
-        { has quickshell || has qs; } &&
-        { has kitty || has foot || has alacritty || has xterm; } &&
-        [[ -r "$REPO_ROOT/config/installer/Installer.qml" ]]; then
-        local quickshell_bin
-        if has quickshell; then
-            quickshell_bin=$(command -v quickshell)
-        else
-            quickshell_bin=$(command -v qs)
-        fi
-        export HYPRMONO_REPO="$REPO_ROOT"
-        # Not exec'd: if the QML window fails to start, continue with the terminal installer.
-        if "$quickshell_bin" -p "$REPO_ROOT/config/installer/Installer.qml"; then
-            return 0
-        fi
-        warn "The graphical installer failed to start; continuing in the terminal."
-    fi
-
    clear
 
 cat <<EOF
@@ -1136,6 +1166,22 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
 
     install_aur_packages
 
+    if [[ "$SKIP_PKGS" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
+        title "Caffyne Shell Setup"
+        if ask "Clone and configure Caffyne Shell?" y; then
+            if bash "$REPO_ROOT/scripts/install-caffyne-shell.sh" &>>"$LOGFILE"; then
+                ok "Caffyne Shell is ready."
+            else
+                warn "Caffyne Shell setup failed (see $LOGFILE); the terminal installer remains available."
+            fi
+        else
+            warn "Caffyne Shell setup skipped."
+        fi
+    elif [[ "$DRY_RUN" -eq 1 ]]; then
+        title "Caffyne Shell Setup"
+        info "Dry run: would clone Caffyne Shell to \$XDG_CONFIG_HOME/caffyne-shell."
+    fi
+
     DEPLOYED_ITEMS=()
     BACKUP_DIR="(none created)"
     if [[ "$WIPE_CONFIGS" -eq 1 ]]; then
@@ -1143,6 +1189,7 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     fi
     if ask "Proceed with configuration deployment?" y; then
         install_configs
+        install_sddm_theme
         install_calm_shell
     fi
 
@@ -1169,9 +1216,9 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     echo
 
     echo -e "${BOLD}${WHITE}Next${RESET}"
-    echo "  reboot (or reload Hyprland)"
+    echo "  log out and select Niri (or reboot)"
     echo "  calm"
-    echo "  start-shell.sh (launches HyprMono's shell, or the Caelestia fallback)"
+    echo "  start-shell.sh (launches Caffyne Shell)"
     if [[ "$DRY_RUN" -eq 1 ]]; then
         echo "  rerun without --dry-run to apply changes"
     fi

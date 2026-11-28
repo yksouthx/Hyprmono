@@ -27,7 +27,7 @@ for component in fish waybar rofi dunst wofi swaync wlogout swaylock kde-materia
         exit 1
     fi
 done
-[[ ! -e "$REPO_ROOT/config/Hyprland/hypr/hyprpaper.conf" ]]
+[[ ! -e "$REPO_ROOT/config/Hyprland" ]]
 
 run_profile() {
     local profile="$1"
@@ -50,17 +50,21 @@ grep -q 'Home, configuration, and local-bin paths are writable' "$TEMP_DIR/minim
 grep -q 'All required environment tests passed' "$TEMP_DIR/minimal.out"
 grep -q 'Skipping unselected optional fastfetch configuration.' "$TEMP_DIR/minimal.out"
 grep -q 'Dry run: would install missing packages:' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*cava' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*niri' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*swayidle' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*swaylock' "$TEMP_DIR/minimal.out"
+! grep -Eqi 'Dry run: would install missing packages:.*(hyprland|hyprlock|hypridle|hyprcursor|xdg-desktop-portal-hyprland)' "$TEMP_DIR/minimal.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(fish|fastfetch|yazi)' "$TEMP_DIR/minimal.out"
-grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/minimal.out"
-grep -q "Dry run: would deploy hypr to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
-grep -q "Dry run: would deploy hyprmono to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
-grep -q "Dry run: would deploy caelestia to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
+grep -q "Dry run: would deploy niri to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
+! grep -q "Dry run: would deploy hypr to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 ! grep -Eq 'Dry run: would install missing packages:.*(waybar|rofi|dunst|wofi|swaync|wlogout|swaylock|hyprpaper)' "$TEMP_DIR/minimal.out"
 # The project shell ships its own bar; fuzzel (launcher), fnott (notifications) and the
 # network applet (shown from the bar's tray) are part of every profile.
 grep -Eq 'Dry run: would install missing packages:.*fuzzel' "$TEMP_DIR/minimal.out"
 grep -Eq 'Dry run: would install missing packages:.*fnott' "$TEMP_DIR/minimal.out"
 grep -Eq 'Dry run: would install missing packages:.*network-manager-applet' "$TEMP_DIR/minimal.out"
+grep -Eq 'Dry run: would install missing packages:.*sddm' "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy fuzzel to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy fnott to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 
@@ -71,7 +75,6 @@ grep -q 'Dry run: would deploy fastfetch' "$TEMP_DIR/standard.out"
 
 run_profile extended
 grep -q 'Dry run: would install missing packages:.*fastfetch yazi' "$TEMP_DIR/extended.out"
-grep -q 'Dry run: would deploy caelestia' "$TEMP_DIR/extended.out"
 grep -q 'Dry run: would deploy fastfetch' "$TEMP_DIR/extended.out"
 ! grep -Eq 'would (install missing packages|deploy).*(waybar|rofi|dunst|swaync|wlogout|wofi)' "$TEMP_DIR/extended.out"
 
@@ -86,9 +89,14 @@ exit 0
 EOF
 chmod +x "$TEMP_DIR/bin/fc-cache"
 mkdir -p "$TEMP_DIR/home/.local/bin"
-mkdir -p "$TEMP_DIR/home/.config/hypr/custom"
-printf 'personal override\n' > "$TEMP_DIR/home/.config/hypr/custom/user.lua"
+mkdir -p "$TEMP_DIR/home/.config/niri"
+mkdir -p "$TEMP_DIR/home/.config/hypr"
+printf 'old managed Hyprland config\n' > "$TEMP_DIR/home/.config/hypr/hyprland.lua"
+mkdir -p "$TEMP_DIR/home/.cache/Hyprmono"
+printf 'hypr\n' > "$TEMP_DIR/home/.cache/Hyprmono/deployed-targets"
+printf '// personal niri override\n' > "$TEMP_DIR/home/.config/niri/custom.kdl"
 printf 'stale developer copy\n' > "$TEMP_DIR/home/.local/bin/watch-quality.sh"
+printf 'stale compositor profile helper\n' > "$TEMP_DIR/home/.local/bin/profile.sh"
 HOME="$TEMP_DIR/home" \
     XDG_CONFIG_HOME="$TEMP_DIR/home/.config" \
     XDG_CACHE_HOME="$TEMP_DIR/home/.cache" \
@@ -98,12 +106,15 @@ HOME="$TEMP_DIR/home" \
     --terminal --skip-deps --skip-aur --no-cleanup --no-migrate --yes --wipe \
     > "$TEMP_DIR/deployment.out" 2>&1
 [[ ! -e "$TEMP_DIR/home/.local/bin/watch-quality.sh" ]]
-[[ -x "$TEMP_DIR/home/.local/bin/profile.sh" ]]
-[[ -f "$TEMP_DIR/home/.config/hypr/hyprland.lua" ]]
-[[ -f "$TEMP_DIR/home/.config/hyprmono/shell.qml" ]]
-[[ -f "$TEMP_DIR/home/.config/caelestia/shell.json" ]]
-[[ ! -e "$TEMP_DIR/home/.config/hyprmono/caelestia" ]]
-grep -q 'personal override' "$TEMP_DIR/home/.config/hypr/custom/user.lua"
+[[ ! -e "$TEMP_DIR/home/.local/bin/profile.sh" ]]
+[[ ! -e "$TEMP_DIR/home/.config/hypr" ]]
+[[ -f "$TEMP_DIR/home/.config/niri/config.kdl" ]]
+[[ -f "$TEMP_DIR/home/.config/niri/keybinds.kdl" ]]
+[[ -f "$TEMP_DIR/home/.config/niri/workspaces.kdl" ]]
+grep -q 'personal niri override' "$TEMP_DIR/home/.config/niri/custom.kdl"
+backup_dir=$(< "$TEMP_DIR/home/.cache/Hyprmono/original-backup")
+[[ "$(< "$backup_dir/hypr/hyprland.lua")" == "old managed Hyprland config" ]]
+[[ "$(< "$backup_dir/.local-bin/profile.sh")" == "stale compositor profile helper" ]]
 
 mkdir -p "$TEMP_DIR/failure-home" "$TEMP_DIR/bin"
 cat > "$TEMP_DIR/bin/pacman" <<'EOF'
@@ -133,7 +144,7 @@ if HOME="$TEMP_DIR/failure-home" \
 fi
 grep -q 'Pacman failed to install some packages' "$TEMP_DIR/package-failure.out"
 ! grep -q 'Installation Complete' "$TEMP_DIR/package-failure.out"
-[[ ! -e "$TEMP_DIR/failure-home/.config/hypr/hyprland.lua" ]]
+[[ ! -e "$TEMP_DIR/failure-home/.config/niri/config.kdl" ]]
 
 cat > "$TEMP_DIR/bin/uname" <<'EOF'
 #!/usr/bin/env bash

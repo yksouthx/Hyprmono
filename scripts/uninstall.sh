@@ -9,13 +9,13 @@ set -Eeuo pipefail
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 LOCAL_BIN="$HOME/.local/bin"
 # Directories the current installer deploys. Used when no deployment record exists.
-CURRENT_TARGETS=(hypr hyprmono caelestia calm-shell kitty vim fontconfig xdg-desktop-portal fastfetch fuzzel fnott)
+CURRENT_TARGETS=(hypr niri caffyne-shell calm-shell kitty vim fontconfig xdg-desktop-portal fastfetch fuzzel fnott)
 # install.sh records what it actually deployed here, so uninstall never removes
 # unrelated directories (fish, waybar, rofi, ...) that HyprMono does not manage.
 DEPLOYED_FILE="$HOME/.cache/Hyprmono/deployed-targets"
 TARGETS=()
 # Include tools from earlier releases so uninstall removes stale copies.
-INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-caelestia.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh)
+INSTALLED_SCRIPTS=(change_wallpaper.sh cpuinfo.sh fuzzel-emojis.sh gpuinfo.sh hyde hyde-shell.sh hyprmono hyprmono.sh install-caffyne-shell.sh install-calm-shell.sh launch-menu.sh launch_first_available.sh launch_terminal.sh lock-screen.sh migrate.sh performance.sh profile.sh reinstall.sh start-idle.sh start-session-services.sh start-shell.sh uninstall.sh watch-quality.sh)
 BACKUP_PREFIX=".config-backup-"
 LOG_FILE="$HOME/.cache/Hyprmono/uninstall.log"
 # install.sh records the very first backup (the user's original configs) here.
@@ -91,6 +91,41 @@ remove_installed_scripts() {
     done
 }
 
+remove_sddm_theme() {
+    local backup_root="$HOME/.cache/Hyprmono"
+    local original_theme="$backup_root/sddm-original-theme"
+    local original_conf="$backup_root/sddm-original.conf"
+
+    if [[ -d /usr/share/sddm/themes/hyprmono ]] ||
+        [[ -f /etc/sddm.conf.d/10-hyprmono.conf ]]; then
+        if command -v sudo >/dev/null 2>&1; then
+            if [[ -d "$original_theme" ]]; then
+                sudo rm -rf /usr/share/sddm/themes/hyprmono
+                sudo cp -a "$original_theme" /usr/share/sddm/themes/hyprmono
+                ok "Restored the original SDDM theme."
+            else
+                sudo rm -rf /usr/share/sddm/themes/hyprmono
+                ok "Removed the HyprMono SDDM theme."
+            fi
+
+            if [[ -f "$original_conf" ]]; then
+                sudo install -o root -g root -m 0644 "$original_conf" /etc/sddm.conf.d/10-hyprmono.conf
+                ok "Restored the original SDDM configuration."
+            else
+                sudo rm -f /etc/sddm.conf.d/10-hyprmono.conf
+                ok "Removed the HyprMono SDDM configuration."
+            fi
+
+            if [[ -f "$backup_root/sddm-managed" ]]; then
+                sudo systemctl disable sddm.service >/dev/null 2>&1 || true
+                rm -f "$backup_root/sddm-managed"
+            fi
+        else
+            warn "sudo is unavailable; SDDM system files were not changed."
+        fi
+    fi
+}
+
 restore_latest_backup() {
     log "Searching for latest backup..."
 
@@ -153,6 +188,7 @@ main() {
     load_targets
     remove_configs
     remove_installed_scripts
+    remove_sddm_theme
     printf '\n'
     restore_latest_backup
 
