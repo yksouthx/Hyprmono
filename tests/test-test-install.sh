@@ -31,7 +31,8 @@ esac
 STUB
 cat > "$TEMP_DIR/bin/quickshell" <<'STUB'
 #!/usr/bin/env bash
-if [[ "${QS_QT_MISMATCH:-0}" == 1 ]]; then
+if [[ "${QS_QT_MISMATCH:-0}" == 1 \
+    && ( -z "${REBUILD_MARKER:-}" || ! -e "$REBUILD_MARKER" ) ]]; then
     printf 'Quickshell was built against Qt 6.12.0 but the system has updated to Qt 6.12.1 without rebuilding the package.\n' >&2
     exit 0
 fi
@@ -52,6 +53,11 @@ STUB
 cat > "$TEMP_DIR/bin/sudo" <<'STUB'
 #!/usr/bin/env bash
 exit 1
+STUB
+cat > "$TEMP_DIR/bin/paru" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$@" > "$PARU_CAPTURE"
+touch "$REBUILD_MARKER"
 STUB
 chmod +x "$TEMP_DIR/bin/"*
 
@@ -88,7 +94,7 @@ if QS_QT_MISMATCH=1 "$REPO_ROOT/test_install.sh" >"$TEMP_DIR/qt-mismatch.out" 2>
     echo "test_install.sh should reject a Quickshell/Qt version mismatch" >&2
     exit 1
 fi
-grep -q 'Quickshell must be rebuilt against the installed Qt' "$TEMP_DIR/qt-mismatch.out"
+grep -q 'Quickshell needs rebuilding for this Qt version' "$TEMP_DIR/qt-mismatch.out"
 grep -q 'rollback completed' "$TEMP_DIR/qt-mismatch.out"
 [[ "$(< "$HOME/.config/hyprmono/shell.qml")" == "pre-existing shell config" ]]
 [[ "$(< "$HOME/.local/bin/start-shell.sh")" == "pre-existing shell helper" ]]
@@ -121,12 +127,24 @@ grep -q 'rollback completed' "$TEMP_DIR/quickshell-error.out"
 [[ -z "$(find "$HOME" -maxdepth 1 -type d -name '.config-backup-*' -print -quit)" ]]
 [[ ! -e "$XDG_STATE_HOME/Hyprmono" ]]
 
-if ! "$REPO_ROOT/test_install.sh" >"$TEMP_DIR/success.out" 2>&1; then
-    cat "$TEMP_DIR/success.out" >&2
-    echo "test_install.sh should keep a healthy installation" >&2
-    exit 1
+if command -v script >/dev/null 2>&1; then
+    REBUILD_MARKER="$TEMP_DIR/rebuilt" PARU_CAPTURE="$TEMP_DIR/paru-args" \
+        QS_QT_MISMATCH=1 \
+        script -qec "bash '$REPO_ROOT/test_install.sh'" \
+        "$TEMP_DIR/auto-rebuild.typescript" <<< "y" >"$TEMP_DIR/auto-rebuild.stdout" 2>&1
+    grep -q 'Rebuilding Quickshell against the installed Qt with paru' \
+        "$TEMP_DIR/auto-rebuild.typescript"
+    [[ -e "$TEMP_DIR/rebuilt" ]]
+    [[ "$(< "$TEMP_DIR/paru-args")" == $'-S\n--rebuild\nquickshell' ]]
+    grep -q 'Installation smoke test passed' "$TEMP_DIR/auto-rebuild.typescript"
+else
+    if ! "$REPO_ROOT/test_install.sh" >"$TEMP_DIR/success.out" 2>&1; then
+        cat "$TEMP_DIR/success.out" >&2
+        echo "test_install.sh should keep a healthy installation" >&2
+        exit 1
+    fi
+    grep -q 'Installation smoke test passed' "$TEMP_DIR/success.out"
 fi
-grep -q 'Installation smoke test passed' "$TEMP_DIR/success.out"
 [[ -r "$HOME/.config/hyprmono/shell.qml" ]]
 [[ "$(< "$HOME/.config/hyprmono/shell.qml")" != "pre-existing shell config" ]]
 [[ -x "$HOME/.local/bin/start-shell.sh" ]]

@@ -9,7 +9,8 @@ Notable changes to HyprMono are documented here.
 - The Quickshell wallpaper now loads from inside the shell root instead of
   resolving to a blackholed URL outside it.
 - Added `scripts/rebuild-quickshell.sh` to rebuild Quickshell against the
-  installed Qt using paru or yay.
+  installed Qt using paru or yay; the install smoke test offers to run it when
+  it detects the mismatch.
 - Settings window: a `Process` nested inside another `Process` prevented the
   window from loading; the performance sampler is now a sibling object.
 - `Super + L` and `Super + R` no longer depend on Caelestia: lock falls back to

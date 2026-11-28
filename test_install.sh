@@ -23,6 +23,8 @@ Deploy HyprMono's minimal configuration without installing packages, migrating
 the repository, or cleaning other desktop components. Then reload Hyprland,
 check its configuration errors, and smoke-test Quickshell. Any failure restores
 the exact pre-test files and reloads the restored Hyprland configuration.
+If Quickshell needs rebuilding for the installed Qt, the script asks before
+running the package rebuild helper.
 
 Requires an active Hyprland Wayland session and an installed Quickshell.
 Test output is written to a new, private log file on your Desktop.
@@ -263,34 +265,51 @@ check_quickshell() {
     local quickshell_bin="$1"
     local shell_file="$CONFIG_DIR/hyprmono/shell.qml"
     local output="$SNAPSHOT_DIR/quickshell.log"
-    local status=0
+    local status reply rebuild_attempted=0
 
     [[ -r "$shell_file" ]] || fail "deployed Quickshell entry point is missing: $shell_file"
-    printf 'Starting a Quickshell smoke test (up to 6 seconds)...\n'
-    XDG_CACHE_HOME="$SNAPSHOT_DIR/quickshell-cache" \
-        XDG_DATA_HOME="$SNAPSHOT_DIR/quickshell-data" \
-        XDG_STATE_HOME="$SNAPSHOT_DIR/quickshell-state" \
-        timeout --signal=TERM --kill-after=2s 6s \
-        "$quickshell_bin" -n -p "$shell_file" >"$output" 2>&1 || status=$?
+    while true; do
+        status=0
+        printf 'Starting a Quickshell smoke test (up to 6 seconds)...\n'
+        XDG_CACHE_HOME="$SNAPSHOT_DIR/quickshell-cache" \
+            XDG_DATA_HOME="$SNAPSHOT_DIR/quickshell-data" \
+            XDG_STATE_HOME="$SNAPSHOT_DIR/quickshell-state" \
+            timeout --signal=TERM --kill-after=2s 6s \
+            "$quickshell_bin" -n -p "$shell_file" >"$output" 2>&1 || status=$?
 
         if [[ -s "$output" ]]; then
             printf '%s\n' '--- Quickshell smoke-test output ---'
             cat "$output"
             printf '%s\n' '--- End Quickshell output ---'
         fi
-    if grep -Eiq \
-        'Quickshell was built against Qt .*system has updated to Qt .*without rebuilding' \
-        "$output"; then
-        fail "Quickshell must be rebuilt against the installed Qt. Run scripts/rebuild-quickshell.sh, then retry."
-    fi
-    if grep -Eiq \
-        'QQmlApplicationEngine.*failed|failed to load component|Cannot open: qrc:/qs-blackhole|(^|[[:space:]])(Error|ReferenceError|TypeError|SyntaxError):|QML.*(error|failed)|cannot assign|unable to assign|module .*not installed|(^|[[:space:]])error([:[:space:]]|$)' \
-        "$output"; then
-        fail "Quickshell logged a startup or QML error."
-    fi
-    if (( status != 0 && status != 124 )); then
-        fail "Quickshell smoke test exited with status $status."
-    fi
+        if grep -Eiq \
+            'Quickshell was built against Qt .*system has updated to Qt .*without rebuilding' \
+            "$output"; then
+            if (( rebuild_attempted )); then
+                fail "Quickshell still reports a Qt version mismatch after rebuilding."
+            fi
+            if [[ ! -t 0 ]]; then
+                fail "Quickshell needs rebuilding for this Qt version. Run scripts/rebuild-quickshell.sh, then retry."
+            fi
+            printf 'Quickshell was built against a different Qt version. Rebuild it now? [y/N] '
+            IFS= read -r reply || reply=""
+            if [[ ! "$reply" =~ ^[Yy]$ ]]; then
+                fail "Quickshell must be rebuilt before this configuration can be tested."
+            fi
+            bash "$REPO_ROOT/scripts/rebuild-quickshell.sh" || fail "Quickshell rebuild failed."
+            rebuild_attempted=1
+            continue
+        fi
+        if grep -Eiq \
+            'QQmlApplicationEngine.*failed|failed to load component|Cannot open: qrc:/qs-blackhole|(^|[[:space:]])(Error|ReferenceError|TypeError|SyntaxError):|QML.*(error|failed)|cannot assign|unable to assign|module .*not installed|(^|[[:space:]])error([:[:space:]]|$)' \
+            "$output"; then
+            fail "Quickshell logged a startup or QML error."
+        fi
+        if (( status != 0 && status != 124 )); then
+            fail "Quickshell smoke test exited with status $status."
+        fi
+        break
+    done
     printf 'Quickshell smoke test passed.\n'
 }
 

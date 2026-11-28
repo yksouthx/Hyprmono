@@ -126,6 +126,9 @@ script; it uses paru or yay and leaves package confirmation to that tool:
 ./scripts/rebuild-quickshell.sh
 ```
 
+`./test_install.sh` can also offer to run this rebuild interactively when its
+Quickshell smoke test detects the Qt mismatch.
+
 Existing managed configs are backed up to `~/.config-backup-<timestamp>/`
 before deployment. The minimal profile is the default. Standard adds Fastfetch; `--full-ui`
 selects extended and also adds Yazi. No profile installs a duplicate bar.
