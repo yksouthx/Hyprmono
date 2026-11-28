@@ -154,11 +154,8 @@ Caffyne design assets are in `assets/caffyne-shell/`,
 and companion app configs are in `config/`. Caffyne itself is cloned to
 `~/.config/caffyne-shell/`.
 
-The installer can also install a custom monochrome SDDM login screen from
-`assets/sddm/hyprmono/`, enable `sddm.service`, and use the Wayland greeter
-backend. Existing SDDM theme and configuration files are preserved for
-uninstallation. The package and system integration are skipped with
-`--skip-deps` or `--skip-pkgs`.
+HyprMono does not install or configure a login manager. Use the login manager
+already configured on the host to start the Niri session.
 
 The Niri setup is named **NiriMono** and is split into focused files, with
 `config.kdl` as the entrypoint: `environment.kdl`, `input.kdl`, `layout.kdl`,

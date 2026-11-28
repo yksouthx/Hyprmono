@@ -64,7 +64,6 @@ grep -q "Dry run: would deploy niri to $TEMP_DIR/home/.config/" "$TEMP_DIR/minim
 grep -Eq 'Dry run: would install missing packages:.*fuzzel' "$TEMP_DIR/minimal.out"
 grep -Eq 'Dry run: would install missing packages:.*fnott' "$TEMP_DIR/minimal.out"
 grep -Eq 'Dry run: would install missing packages:.*network-manager-applet' "$TEMP_DIR/minimal.out"
-grep -Eq 'Dry run: would install missing packages:.*sddm' "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy fuzzel to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 grep -q "Dry run: would deploy fnott to $TEMP_DIR/home/.config/" "$TEMP_DIR/minimal.out"
 

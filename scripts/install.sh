@@ -243,9 +243,9 @@ resolve_repo_root() {
 
 # --- Package Management ---
 PACMAN_PACKAGES=(
-    qt6-imageformats fuzzel fnott network-manager-applet
+    fuzzel fnott network-manager-applet
     git
-    niri swayidle swaylock sddm kitty
+    niri swayidle swaylock kitty
     gtk3 cairo libgirepository gobject-introspection gtk-layer-shell
     libdbusmenu-gtk3 cinnamon-desktop gnome-bluetooth-3.0 gtk-session-lock
     matugen playerctl brightnessctl wf-recorder upower cava
@@ -596,73 +596,6 @@ backup_local_bin_entry() {
 }
 
 # --- Core Installation ---
-install_sddm_theme() {
-    if [[ "$SKIP_DEPS" -eq 1 || "$SKIP_PKGS" -eq 1 ]]; then
-        info "Skipping SDDM setup because dependency installation is disabled."
-        return 0
-    fi
-    if [[ "$DRY_RUN" -eq 1 ]]; then
-        info "Dry run: would install the HyprMono SDDM theme and enable sddm.service."
-        return 0
-    fi
-
-    local theme_source="$REPO_ROOT/assets/sddm/hyprmono"
-    if [[ ! -d "$theme_source" ]]; then
-        warn "HyprMono SDDM theme assets are missing; skipping display-manager setup."
-        return 0
-    fi
-    if ! ask "Install and configure the custom HyprMono SDDM login screen?" y; then
-        warn "Custom SDDM login screen skipped."
-        return 0
-    fi
-
-    if ! has sudo; then
-        warn "sudo is unavailable; skipping custom SDDM login screen."
-        return 0
-    fi
-
-    local backup_root="$HOME/.cache/Hyprmono"
-    local original_theme="$backup_root/sddm-original-theme"
-    local original_conf="$backup_root/sddm-original.conf"
-
-    if [[ -d /usr/share/sddm/themes/hyprmono ]] && [[ ! -e "$original_theme" ]]; then
-        sudo mkdir -p "$backup_root"
-        sudo cp -a /usr/share/sddm/themes/hyprmono "$original_theme"
-    fi
-    if [[ -f /etc/sddm.conf.d/10-hyprmono.conf ]] && [[ ! -e "$original_conf" ]]; then
-        sudo mkdir -p "$backup_root"
-        sudo cp -a /etc/sddm.conf.d/10-hyprmono.conf "$original_conf"
-    fi
-
-    sudo mkdir -p /usr/share/sddm/themes/hyprmono
-    sudo cp -rf "$theme_source/." /usr/share/sddm/themes/hyprmono/
-    sudo chmod 0755 /usr/share/sddm/themes/hyprmono
-    sudo chmod 0644 /usr/share/sddm/themes/hyprmono/*.conf /usr/share/sddm/themes/hyprmono/*.desktop \
-        /usr/share/sddm/themes/hyprmono/*.qml 2>/dev/null || true
-
-    local temporary_conf
-    temporary_conf=$(mktemp)
-    cat > "$temporary_conf" <<'EOF'
-[General]
-DisplayServer=wayland
-GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell
-
-[Theme]
-Current=hyprmono
-EOF
-    sudo mkdir -p /etc/sddm.conf.d
-    sudo install -o root -g root -m 0644 "$temporary_conf" /etc/sddm.conf.d/10-hyprmono.conf
-    rm -f -- "$temporary_conf"
-
-    if sudo systemctl enable sddm.service &>>"$LOGFILE"; then
-        mkdir -p "$backup_root"
-        touch "$backup_root/sddm-managed"
-        ok "HyprMono SDDM theme installed and sddm.service enabled."
-    else
-        warn "SDDM theme installed, but sddm.service could not be enabled."
-    fi
-}
-
 install_configs() {
     title "Configuration Deployment"
 
@@ -1189,7 +1122,6 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
     fi
     if ask "Proceed with configuration deployment?" y; then
         install_configs
-        install_sddm_theme
         install_calm_shell
     fi
 
