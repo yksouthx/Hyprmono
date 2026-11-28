@@ -6,4 +6,6 @@
 //     open-on-output "DP-1"
 // }
 
-workspace "Music"
+workspace "Music" {
+    open-on-output "DP-1"
+}

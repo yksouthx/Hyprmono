@@ -12,7 +12,6 @@ binds {
     Mod+Alt+L repeat=false { spawn "bash" "-lc" "$HOME/.local/bin/lock-screen.sh"; }
 
     Mod+Q repeat=false { close-window; }
-    Alt+F4 repeat=false { close-window; }
     Mod+F repeat=false { maximize-column; }
     Mod+Shift+F repeat=false { fullscreen-window; }
     Mod+V repeat=false { toggle-window-floating; }
@@ -73,7 +72,7 @@ binds {
     Mod+Shift+8 { move-column-to-workspace 8; }
     Mod+Shift+9 { move-column-to-workspace 9; }
 
-    Mod+M repeat=false { focus-workspace "Music"; }
+    Mod+M repeat=false { spawn "bash" "-lc" "Spotify"; }
     Mod+BracketLeft  { consume-or-expel-window-left; }
     Mod+BracketRight { consume-or-expel-window-right; }
     Mod+Comma  { consume-window-into-column; }

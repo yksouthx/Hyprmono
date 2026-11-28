@@ -1,8 +1,7 @@
 input {
     keyboard {
         xkb {
-            layout "us"
-        }
+            layout "pl"
         numlock
         repeat-delay 250
         repeat-rate 35
@@ -10,14 +9,12 @@ input {
 
     touchpad {
         tap
-        natural-scroll
         click-method "clickfinger"
         scroll-factor 0.7
         dwt
     }
 
     mouse {
-        natural-scroll
     }
 
     warp-mouse-to-focus
