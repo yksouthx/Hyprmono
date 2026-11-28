@@ -8,9 +8,8 @@ Notable changes to HyprMono are documented here.
 
 - The Quickshell wallpaper now loads from inside the shell root instead of
   resolving to a blackholed URL outside it.
-- Added `scripts/rebuild-quickshell.sh` to rebuild Quickshell against the
-  installed Qt using paru or yay; the install smoke test offers to run it when
-  it detects the mismatch.
+- Install smoke tests now treat Quickshell's Qt build-version notice as a
+  warning, while still rolling back on QML startup errors.
 - Settings window: a `Process` nested inside another `Process` prevented the
   window from loading; the performance sampler is now a sibling object.
 - `Super + L` and `Super + R` no longer depend on Caelestia: lock falls back to
@@ -47,8 +46,8 @@ Notable changes to HyprMono are documented here.
 
 - Added `./test_install.sh` to test a minimal deployment in the active
   Hyprland/Quickshell session and automatically restore pre-test files if
-  either smoke check fails; it also rejects Quickshell binaries built against
-  a different Qt version and saves a private log on the Desktop.
+  either smoke check fails. It tolerates Qt build-version notices and saves a
+  private log on the Desktop.
 - Reusable Quickshell easing animation for the media pill and animated
   media/quick-settings panel entrances.
 - System tray context menus in the bar (right-click; left-click for menu-only

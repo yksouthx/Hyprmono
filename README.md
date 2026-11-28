@@ -118,16 +118,11 @@ previous Hyprland configuration. A successful test leaves HyprMono installed.
 Each run saves its full output to a unique, owner-only
 `~/Desktop/hyprmono-test-install-*.log` file.
 
-If Quickshell reports that it was built against a different Qt version, rebuild
-the package against the installed Qt before retrying. On Arch, run the helper
-script; it uses paru or yay and leaves package confirmation to that tool:
-
-```bash
-./scripts/rebuild-quickshell.sh
-```
-
-`./test_install.sh` can also offer to run this rebuild interactively when its
-Quickshell smoke test detects the Qt mismatch.
+The smoke test treats Quickshell's Qt build-version notice as a warning, not a
+configuration failure. It still rolls back on QML startup errors, missing
+resources, or an unexpected process exit. The shell uses unversioned QtQuick
+imports and relies on the modules exposed by the installed Quickshell runtime;
+compatibility depends on those runtime APIs being available.
 
 Existing managed configs are backed up to `~/.config-backup-<timestamp>/`
 before deployment. The minimal profile is the default. Standard adds Fastfetch; `--full-ui`
