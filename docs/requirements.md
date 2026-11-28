@@ -129,5 +129,10 @@ of session startup.
 The installer backs up managed configuration before replacing it. The
 migration tool also backs up selected Rofi/Waybar files and requires explicit
 confirmation for each removal; use `hyprmono migrate --rollback <backup-dir>`
-to restore a migration backup. Package changes are not a performance result:
-measure on the target host before and after any change.
+to restore a migration backup. When migrating into a repository directory that
+already has `.git` metadata, the installer preserves that metadata and copies
+the working-tree files without overwriting Git objects. Run the installer as
+your normal user, not with `sudo`; if migration reports a write-permission
+failure on other files, inspect and correct ownership only for the affected
+paths before retrying. Package changes are not a performance result: measure
+on the target host before and after any change.

@@ -164,4 +164,36 @@ grep -q 'Linux is required' "$TEMP_DIR/unsupported-os.out"
 grep -q 'required environment test(s) failed' "$TEMP_DIR/unsupported-os.out"
 ! grep -q 'System Scan' "$TEMP_DIR/unsupported-os.out"
 
+# An existing destination's Git object store may be read-only; migration must
+# preserve it and copy the working tree without writing into .git.
+migration_home="$TEMP_DIR/migration-home"
+migration_target="$migration_home/.local/share/Hyprmono"
+mkdir -p "$TEMP_DIR/migration-bin"
+cat > "$TEMP_DIR/migration-bin/pacman" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+chmod +x "$TEMP_DIR/migration-bin/pacman"
+mkdir -p "$migration_target/.git/objects"
+printf 'existing git metadata\n' > "$migration_target/.git/HEAD"
+chmod -R u-w "$migration_target/.git/objects"
+if ! HOME="$migration_home" \
+    XDG_CONFIG_HOME="$migration_home/.config" \
+    XDG_CACHE_HOME="$migration_home/.cache" \
+PATH="$TEMP_DIR/migration-bin:$PATH" \
+    TERM=xterm \
+    "$REPO_ROOT/install.sh" \
+    --repo "$REPO_ROOT" --terminal --skip-deps --skip-aur --no-cleanup --yes \
+    > "$TEMP_DIR/repository-migration.out" 2>&1; then
+    chmod -R u+w "$migration_target/.git/objects"
+    cat "$TEMP_DIR/repository-migration.out" >&2
+    exit 1
+fi
+chmod -R u+w "$migration_target/.git/objects"
+grep -q 'Preserving Git metadata already present' "$TEMP_DIR/repository-migration.out"
+grep -q 'Installation Complete' "$TEMP_DIR/repository-migration.out"
+[[ "$(< "$migration_target/.git/HEAD")" == "existing git metadata" ]]
+[[ -f "$migration_target/scripts/install.sh" ]]
+[[ ! -e "$migration_target/.git/config" ]]
+
 printf 'Installation profile package/config selection passed.\n'

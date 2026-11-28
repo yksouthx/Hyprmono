@@ -1062,8 +1062,17 @@ printf "${DIM}Log File    %s${RESET}\n\n" "$LOGFILE"
             info "Dry run: would offer to migrate repository to $TARGET_REPO_DIR."
         elif ask "Migrate repository to standard location ($TARGET_REPO_DIR)?" y; then
             mkdir -p "$TARGET_REPO_DIR"
-            # "/." copies dotfiles too, so .git survives and `hyprmono update` keeps working
-            \cp -a "$REPO_ROOT/." "$TARGET_REPO_DIR/"
+            if [[ -e "$TARGET_REPO_DIR/.git" || -L "$TARGET_REPO_DIR/.git" ]]; then
+                info "Preserving Git metadata already present in $TARGET_REPO_DIR."
+                if ! find "$REPO_ROOT" -mindepth 1 -maxdepth 1 ! -name .git \
+                    -exec cp -a -- {} "$TARGET_REPO_DIR/" \;; then
+                    err "Repository migration failed. Check ownership and write permissions under $TARGET_REPO_DIR, then retry as your normal user."
+                    exit 1
+                fi
+            elif ! \cp -a "$REPO_ROOT/." "$TARGET_REPO_DIR/"; then
+                err "Repository migration failed. Check ownership and write permissions under $TARGET_REPO_DIR, then retry as your normal user."
+                exit 1
+            fi
             ok "Migration complete."
             info "Continuing install from $TARGET_REPO_DIR..."
             # exec skips the EXIT trap, so stop the sudo keep-alive loop ourselves
