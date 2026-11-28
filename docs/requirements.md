@@ -28,7 +28,6 @@ this project.
 | Wayland compositor, outputs, workspaces, window rules, and screenshot actions | Niri |
 | Bar, Dash/application menu, media and system applets, wallpaper UI | Caffyne Shell |
 | Wallpaper transitions | Caffyne's wallpaper service using `awww` |
-| Lock screen | `swaylock` |
 | Idle behavior | Caffyne when its startup script is present; otherwise `swayidle` |
 | Authentication prompts | A detected Polkit authentication agent |
 | Notifications | Existing notification-bus owner; `fnott` is started as a fallback |
@@ -36,6 +35,8 @@ this project.
 | Audio backend and controls | PipeWire/WirePlumber, `wpctl`, and Caffyne |
 | Spotify metadata and bar visualization | Caffyne MPRIS applet, `playerctl`, and optional-at-runtime CAVA visualization |
 | App launcher | Caffyne Dash (`Mod+R`); Fuzzel is retained for emoji picking |
+| Desktop widgets | Caffyne's native desktop-applet canvas |
+| Lock screen | Caffyne's native session lock; the HyprMono lock helper falls back to `swaylock` |
 
 Niri uses ordinary named workspaces. The persistent `Music` workspace is
 focused with `Mod+M`; it is not a Hyprland-style hidden special workspace.
@@ -89,9 +90,10 @@ The following are optional rather than core desktop requirements:
 | Capability | Repository status and boundary |
 | --- | --- |
 | Bar, application menu, media, network, audio, brightness, and energy applets | Provided by Caffyne's configured bar and Dash. Hardware availability and upstream applet behavior still depend on the host. |
+| Desktop widgets | The primary output starts with Clock, Calendar, and Processes (CPU/memory) widgets. Add, move, or remove applets through Caffyne Dash; placements persist in Caffyne's config. |
 | Spotify music workspace | Configured as a named Niri workspace with a `Mod+M` binding and Spotify window rules. |
 | Wallpaper | HyprMono copies `assets/wall.webp` into Caffyne's wallpaper directory and selects it in the shell config. Caffyne's wallpaper service uses `awww` and starts its daemon when needed. |
-| Locking and idle | `swaylock` and lock helper are configured. `start-idle.sh` uses Caffyne when its startup script exists; otherwise it runs `swayidle`. A present but failing Caffyne startup script does not trigger that fallback. |
+| Locking and idle | Caffyne's idle service launches its native session lock. `Mod+Alt+L` and the `swayidle` fallback use `lock-screen.sh`, which tries the Caffyne lock and falls back to `swaylock` if unavailable or unsuccessful. |
 | Display configuration | Niri detects outputs and supports the checked-in monitor configuration. No `kanshi` display-profile service is installed or configured. |
 | Night light | No `wlsunset` dependency or night-light startup configuration is included. |
 | Authentication | `start-session-services.sh` starts the first available Polkit agent from its supported paths. The actual agent and policy integration depend on installed host packages. |

@@ -37,3 +37,17 @@ indicator and a HyprMono RAM meter. The HyprMono wallpaper is copied into
 
 The Dash uses a dark translucent scrim, rounded application tiles, and
 high-contrast hover states from `assets/caffyne-shell/hyprmono.css`.
+
+## Desktop widgets and lock screen
+
+The primary output starts with Caffyne's Clock, Calendar, and Processes
+widgets. Processes displays CPU load, memory use, and CPU temperature when the
+hardware exposes it. Open the Dash with `Mod+R`, switch to **Applets**, and drag
+an applet onto the desktop to add it. Drag placed widgets to move them;
+right-click one to remove it. Caffyne saves placements in
+`~/.config/caffyne-shell/config/config.json`.
+
+`Mod+Alt+L` uses Caffyne's native session-lock screen, with the blurred
+wallpaper, clock, and password prompt. Caffyne's idle service uses that same
+native lock screen directly. If it is unavailable or fails when invoked through
+the HyprMono lock helper, the helper falls back to `swaylock`.

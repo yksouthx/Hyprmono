@@ -48,6 +48,15 @@
   "wallpaper": {
     "path": "__HYPRMONO_WALLPAPER__"
   },
+  "desktop_canvas": {
+    "placements": {
+      "0": [
+        {"key": "Clock", "ax": "left", "dx": 0, "ry": 0.02},
+        {"key": "Calendar", "ax": "left", "dx": 0, "ry": 0.26},
+        {"key": "Processes", "ax": "right", "dx": 0, "ry": 0.02}
+      ]
+    }
+  },
   "idle_timeouts": {
     "list": [
       {"name": "screen-off", "timeout_ac": 10, "timeout_bat": 2, "enabled": true},

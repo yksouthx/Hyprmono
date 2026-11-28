@@ -27,6 +27,29 @@ chmod +x "$bin/pgrep"
 PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-screen.sh"
 grep -q '^swaylock -f --color 080808' "$CALLS"
 
+lock_home="$TEMP_DIR/lock-caffyne-home"
+caffyne_dir="$lock_home/.config/caffyne-shell"
+mkdir -p "$caffyne_dir/venv/bin"
+touch "$caffyne_dir/lockscreen.py"
+cat > "$caffyne_dir/venv/bin/python" <<'EOF'
+#!/bin/sh
+printf 'caffyne-lock %s\n' "$*" >> "$CALLS"
+exit "${LOCK_RESULT:-0}"
+EOF
+chmod +x "$caffyne_dir/venv/bin/python"
+: > "$CALLS"
+PATH="$bin:$BASE_PATH" HOME="$lock_home" XDG_CONFIG_HOME="$lock_home/.config" \
+    bash "$REPO_ROOT/scripts/lock-screen.sh"
+grep -q '^caffyne-lock .*lockscreen.py$' "$CALLS"
+! grep -q '^swaylock' "$CALLS"
+
+: > "$CALLS"
+PATH="$bin:$BASE_PATH" HOME="$lock_home" XDG_CONFIG_HOME="$lock_home/.config" \
+    LOCK_RESULT=1 bash "$REPO_ROOT/scripts/lock-screen.sh" 2>"$TEMP_DIR/lock-fallback.err"
+grep -q '^caffyne-lock .*lockscreen.py$' "$CALLS"
+grep -q '^swaylock -f --color 080808' "$CALLS"
+grep -q 'falling back to swaylock' "$TEMP_DIR/lock-fallback.err"
+
 bin="$TEMP_DIR/lock-nothing"
 mkdir -p "$bin"
 if PATH="$bin:$BASE_PATH" HOME="$TEMP_DIR/home" bash "$REPO_ROOT/scripts/lock-screen.sh" 2>/dev/null; then

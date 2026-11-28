@@ -4,6 +4,20 @@ from pathlib import Path
 
 
 root = Path(os.environ["CAFFYNE_ROOT"])
+desktop_widget_migration = root / ".hyprmono-desktop-widgets-v1"
+DEFAULT_DESKTOP_PLACEMENTS = {
+    "0": [
+        {"key": "Clock", "ax": "left", "dx": 0, "ry": 0.02},
+        {"key": "Calendar", "ax": "left", "dx": 0, "ry": 0.26},
+        {"key": "Processes", "ax": "right", "dx": 0, "ry": 0.02},
+    ]
+}
+DEFAULT_RESOURCE_PLACEMENT = {
+    "key": "Processes",
+    "ax": "right",
+    "dx": 0,
+    "ry": 0.02,
+}
 
 init_file = root / "bar_widgets" / "__init__.py"
 text = init_file.read_text()
@@ -77,8 +91,31 @@ if config_file.is_file():
                 )
                 if not has_media:
                     applet_lists[0].append("Media")
+
+        if not desktop_widget_migration.exists():
+            desktop_canvas = data.setdefault("desktop_canvas", {})
+            if not isinstance(desktop_canvas, dict):
+                raise TypeError("desktop_canvas must be an object")
+            placements = desktop_canvas.get("placements")
+            if placements is None or placements == {}:
+                desktop_canvas["placements"] = DEFAULT_DESKTOP_PLACEMENTS
+            elif not isinstance(placements, dict):
+                raise TypeError("desktop_canvas.placements must be an object")
+            else:
+                if any(not isinstance(entries, list) for entries in placements.values()):
+                    raise TypeError("each desktop_canvas placement must be a list")
+                has_resource_widget = any(
+                    isinstance(entry, dict) and entry.get("key") == "Processes"
+                    for entries in placements.values()
+                    for entry in entries
+                )
+                if not has_resource_widget:
+                    primary = placements.setdefault("0", [])
+                    if not isinstance(primary, list):
+                        raise TypeError("primary desktop_canvas placement must be a list")
+                    primary.append(DEFAULT_RESOURCE_PLACEMENT)
     except (KeyError, TypeError) as error:
-        raise SystemExit(f"Could not add the Media applet to {config_file}: {error}") from error
+        raise SystemExit(f"Could not update Caffyne applets in {config_file}: {error}") from error
 
     try:
         if "wallpaper" not in data:
@@ -87,3 +124,11 @@ if config_file.is_file():
         config_file.write_text(json.dumps(data, indent=2) + "\n")
     except (OSError, TypeError) as error:
         raise SystemExit(f"Could not update Caffyne config {config_file}: {error}") from error
+
+    if not desktop_widget_migration.exists():
+        try:
+            desktop_widget_migration.write_text("1\n", encoding="utf-8")
+        except OSError as error:
+            raise SystemExit(
+                f"Could not record desktop widget defaults in {desktop_widget_migration}: {error}"
+            ) from error
